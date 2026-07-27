@@ -14,7 +14,7 @@
   - [x] M3.3 后端 `POST /chat/stream` SSE
   - [x] M3.4 前端流式 + 打字机效果
   - [x] M3.5 联调 polish + 问答卡 + PR 合并
-- [ ] **M4** 真实化 + 亮点 ← **进行中** → [SCENARIO.md](./SCENARIO.md) · [M4-steps.md](./M4-steps.md) · [qa-m4.md](./qa-m4.md)
+- [x] **M4** 真实化 + 亮点 → [SCENARIO.md](./SCENARIO.md) · [M4-steps.md](./M4-steps.md) · [qa-m4.md](./qa-m4.md) · PR [#2](https://github.com/bigcabbag/rag-agent/pull/2) 已合并
   - [x] M4.0 Markdown 入库 + DevKit 场景 README
   - [x] M4.1 评估集 20 题 + Recall@3
   - [x] M4.2 LangGraph CRAG（对标 agentic-rag-for-dummies）
