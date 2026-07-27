@@ -1,30 +1,5 @@
 from app.llm import chat
-from app.rag.retriever import retrieve
-
-RAG_SYSTEM_PROMPT = """你是一个企业知识库助手。请仅根据以下参考文档回答问题。
-如果参考文档中没有相关信息，请明确说「文档中未找到相关信息」，不要编造。
-
-参考文档：
-{context}"""
-
-
-def _build_context(docs: list) -> tuple[str, list[dict]]:
-    parts: list[str] = []
-    sources: list[dict] = []
-
-    for i, doc in enumerate(docs, start=1):
-        source = str(doc.metadata.get("source", "未知"))
-        page = doc.metadata.get("page", "?")
-        parts.append(f"[{i}] 来源: {source} 第{page}页\n{doc.page_content}")
-        sources.append(
-            {
-                "source": source,
-                "page": page,
-                "content": doc.page_content[:200],
-            }
-        )
-
-    return "\n\n".join(parts), sources
+from app.rag.graph import run_crag_prepare
 
 
 async def rag_chat(
@@ -32,33 +7,28 @@ async def rag_chat(
     *,
     top_k: int = 3,
     system_prompt: str | None = None,
-) -> tuple[str, list[dict]]:
-    docs = retrieve(message, top_k=top_k)
-    if not docs:
-        return "知识库中暂无相关文档，请先上传 PDF。", []
-
-    context, sources = _build_context(docs)
-    rag_prompt = RAG_SYSTEM_PROMPT.format(context=context)
-    if system_prompt:
-        rag_prompt = f"{system_prompt}\n\n{rag_prompt}"
+) -> tuple[str, list[dict], str]:
+    rag_prompt, sources, early, trace_id = await run_crag_prepare(
+        message,
+        top_k=top_k,
+        system_prompt=system_prompt,
+    )
+    if early is not None:
+        return early, sources, trace_id
 
     reply = await chat(message, system_prompt=rag_prompt)
-    return reply, sources
+    return reply, sources, trace_id
 
 
-def prepare_rag_stream(
+async def prepare_rag_stream_async(
     message: str,
     *,
     top_k: int = 3,
     system_prompt: str | None = None,
-) -> tuple[str | None, list[dict], str | None]:
-    """RAG 流式：先检索，返回 (拼好的 system_prompt, sources, 无文档时的整段回复)。"""
-    docs = retrieve(message, top_k=top_k)
-    if not docs:
-        return None, [], "知识库中暂无相关文档，请先上传 PDF。"
-
-    context, sources = _build_context(docs)
-    rag_prompt = RAG_SYSTEM_PROMPT.format(context=context)
-    if system_prompt:
-        rag_prompt = f"{system_prompt}\n\n{rag_prompt}"
-    return rag_prompt, sources, None
+) -> tuple[str | None, list[dict], str | None, str]:
+    """RAG 流式：CRAG 预处理（M4.2 LangGraph）+ trace_id（M4.4）。"""
+    return await run_crag_prepare(
+        message,
+        top_k=top_k,
+        system_prompt=system_prompt,
+    )

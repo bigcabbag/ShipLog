@@ -29,6 +29,10 @@ class ChatResponse(BaseModel):
     reply: str
     model: str
     sources: list[SourceChunk] | None = None
+    trace_id: str | None = Field(
+        default=None,
+        description="RAG 请求 trace_id，可用于 GET /traces/{trace_id} 回放检索过程",
+    )
 
 
 class ChunkPreview(BaseModel):

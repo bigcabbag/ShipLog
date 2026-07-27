@@ -1,0 +1,122 @@
+[
+  {
+    "id": "q01",
+    "question": "M3 分几步？每步做什么？",
+    "expected_sources": ["M3-steps.md"],
+    "should_abstain": false
+  },
+  {
+    "id": "q02",
+    "question": "M3.4 前端要接什么接口实现打字机？",
+    "expected_sources": ["M3-steps.md", "qa-m3.md"],
+    "should_abstain": false
+  },
+  {
+    "id": "q03",
+    "question": "开发期 CORS 允许哪些前端 origin？",
+    "expected_sources": ["qa-m3.md"],
+    "should_abstain": false
+  },
+  {
+    "id": "q04",
+    "question": "POST /chat/stream 返回什么 Content-Type？",
+    "expected_sources": ["M3-steps.md", "qa-m3.md"],
+    "should_abstain": false
+  },
+  {
+    "id": "q05",
+    "question": "DevKit 文档助手解决什么痛点？",
+    "expected_sources": ["SCENARIO.md"],
+    "should_abstain": false
+  },
+  {
+    "id": "q06",
+    "question": "M2 的 RAG 数据流怎么走？",
+    "expected_sources": ["M2-steps.md", "qa-m2.md"],
+    "should_abstain": false
+  },
+  {
+    "id": "q07",
+    "question": "use_rag 为 true 时后端会做什么？",
+    "expected_sources": ["qa-m3.md", "qa-m2.md"],
+    "should_abstain": false
+  },
+  {
+    "id": "q08",
+    "question": "默认 chunk_size 和 chunk_overlap 是多少？",
+    "expected_sources": ["M2-steps.md"],
+    "should_abstain": false
+  },
+  {
+    "id": "q09",
+    "question": "从 M3 起 Git 协作走什么流程？",
+    "expected_sources": ["PLAN.md", "M3-steps.md"],
+    "should_abstain": false
+  },
+  {
+    "id": "q10",
+    "question": "M4.2 LangGraph CRAG 要做什么？",
+    "expected_sources": ["M4-steps.md"],
+    "should_abstain": false
+  },
+  {
+    "id": "q11",
+    "question": "M4.3 混合检索对标哪个 GitHub 项目？",
+    "expected_sources": ["M4-steps.md", "SCENARIO.md"],
+    "should_abstain": false
+  },
+  {
+    "id": "q12",
+    "question": "为什么流式接口用 fetch 而不是 EventSource？",
+    "expected_sources": ["qa-m3.md"],
+    "should_abstain": false
+  },
+  {
+    "id": "q13",
+    "question": "M4.0 怎么一键导入 docs 目录的 Markdown？",
+    "expected_sources": ["M4-steps.md", "qa-m4.md", "README.md"],
+    "should_abstain": false
+  },
+  {
+    "id": "q14",
+    "question": "同名文件更新后向量库怎么处理旧 chunk？",
+    "expected_sources": ["qa-m4.md", "qa-scenario-guide.md"],
+    "should_abstain": false
+  },
+  {
+    "id": "q15",
+    "question": "M4.1 评估集要输出什么指标？",
+    "expected_sources": ["M4-steps.md"],
+    "should_abstain": false
+  },
+  {
+    "id": "q16",
+    "question": "Chroma 向量库文件存在哪个目录？",
+    "expected_sources": ["M2-steps.md"],
+    "should_abstain": false
+  },
+  {
+    "id": "q17",
+    "question": "SSE 流式结束时 done 事件带什么字段？",
+    "expected_sources": ["qa-m3.md", "M3-steps.md"],
+    "should_abstain": false
+  },
+  {
+    "id": "q18",
+    "question": "M5 里程碑主要交付什么？",
+    "expected_sources": ["PLAN.md", "M4-steps.md"],
+    "should_abstain": false
+  },
+  {
+    "id": "q19",
+    "question": "骆健渤的月薪是多少？",
+    "expected_sources": [],
+    "should_abstain": true
+  },
+  {
+    "id": "q20",
+    "question": "rag-agent 公司的年假有几天？",
+    "expected_sources": [],
+    "should_abstain": true
+  }
+]

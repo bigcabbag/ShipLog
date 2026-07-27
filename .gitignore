@@ -20,6 +20,14 @@ data/uploads/*
 data/chroma/*
 !data/chroma/.gitkeep
 
+# BM25 语料（跑 import_docs 生成）
+data/bm25/*
+!data/bm25/.gitkeep
+
+# RAG trace 日志（运行时追加）
+data/traces/*
+!data/traces/.gitkeep
+
 # 前端
 frontend/node_modules/
 frontend/dist/

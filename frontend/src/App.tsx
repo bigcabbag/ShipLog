@@ -39,9 +39,11 @@ function App() {
   return (
     <main className="page">
       <header className="header">
-        <p className="eyebrow">DevKit · M3 全栈 RAG</p>
+        <p className="eyebrow">DevKit · M4 真实文档 RAG</p>
         <h1>研发团队文档助手</h1>
-        <p className="subtitle">上传 PDF → 向量统计 → 流式问答 + 引用来源</p>
+        <p className="subtitle">
+          索引本项目 docs（PLAN、分步指南、qa 卡）→ 流式问答 + 引用来源（DevKit 场景）
+        </p>
       </header>
 
       <section className="card card--compact">
@@ -69,16 +71,6 @@ function App() {
           <ChatPanel disabled={!backendReady} />
         </div>
       </div>
-
-      <section className="card muted">
-        <h2>验收（M3.5）</h2>
-        <ol className="tips-list">
-          <li>左侧上传 PDF，确认 vector_count &gt; 0</li>
-          <li>右侧开「流式输出」，提问后看逐字生成 + 引用来源</li>
-          <li>关流式开关，确认仍可用非流式 /chat</li>
-          <li>全程浏览器完成，无需 Swagger</li>
-        </ol>
-      </section>
     </main>
   );
 }

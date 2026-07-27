@@ -7,20 +7,24 @@
 - [x] **M0** 环境：uv + Python 3.12 + FastAPI `/health`
 - [x] **M1** 首个 LLM：DeepSeek + `/chat` + [qa-m1.md](./qa-m1.md)
 - [x] **M2** 基础 RAG：PDF 上传 → 切块 → 检索 → 问答 → [qa-m2.md](./qa-m2.md)
-- [ ] **M3** 全栈：React 前端 + SSE 流式 ← **下一步（PR 流程）** → [M3-steps.md](./M3-steps.md) · [qa-m3.md](./qa-m3.md)
+- [x] **M3** 全栈：React 前端 + SSE 流式 → [M3-steps.md](./M3-steps.md) · [qa-m3.md](./qa-m3.md) · PR [#1](https://github.com/bigcabbag/rag-agent/pull/1) 已合并
   - [x] M3.0 开分支 + Vite/React 脚手架 + CORS
   - [x] M3.1 聊天页（非流式 `POST /chat`）
   - [x] M3.2 上传 PDF + 向量库统计 UI
   - [x] M3.3 后端 `POST /chat/stream` SSE
   - [x] M3.4 前端流式 + 打字机效果
-  - [ ] M3.5 联调 polish + 问答卡 + PR 合并 ← **当前：代码完成，待 PR**
-- [ ] **M4** 真实化 + 亮点 → [SCENARIO.md](./SCENARIO.md) · [M4-steps.md](./M4-steps.md)
-  - [ ] M4.0 Markdown 入库 + DevKit 场景 README
-  - [ ] M4.1 评估集 20 题 + Recall@3
-  - [ ] M4.2 LangGraph CRAG（对标 agentic-rag-for-dummies）
-  - [ ] M4.3 BM25+向量 RRF（对标 CliffsCai）
-  - [ ] M4.4 trace_id 检索日志
-- [ ] **M5** 简历交付：Docker + 场景面试 20 题 → [qa-scenario-guide.md](./qa-scenario-guide.md)
+  - [x] M3.5 联调 polish + 问答卡 + PR 合并
+- [ ] **M4** 真实化 + 亮点 ← **进行中** → [SCENARIO.md](./SCENARIO.md) · [M4-steps.md](./M4-steps.md) · [qa-m4.md](./qa-m4.md)
+  - [x] M4.0 Markdown 入库 + DevKit 场景 README
+  - [x] M4.1 评估集 20 题 + Recall@3
+  - [x] M4.2 LangGraph CRAG（对标 agentic-rag-for-dummies）
+  - [x] M4.3 BM25+向量 RRF（对标 CliffsCai）
+  - [x] M4.4 trace_id 检索日志
+- [ ] **M5** 简历交付 → [M5-steps.md](./M5-steps.md) · [qa-scenario-guide.md](./qa-scenario-guide.md)
+  - [ ] M5.0 Docker Compose（仍用 Chroma）
+  - [ ] M5.1 README 简历化 + 3 分钟介绍
+  - [ ] M5.2 场景面试 20 题自测
+  - [ ] M5.3 **pgvector 最小迁移**（仅换向量层，放 M5 最后）
 
 **项目场景**：DevKit 研发团队文档助手（详见 [SCENARIO.md](./SCENARIO.md)）  
 **面试题规则**：每步出**场景题**（面经驱动），见 [qa-scenario-guide.md](./qa-scenario-guide.md)
@@ -49,10 +53,21 @@ flowchart LR
 |------|-------------|----------|
 | 1. 开分支 | `git checkout -b feature/m3-react` | 功能与主分支隔离 |
 | 2. 开发验收 | 本地跑通 + 我按标准格式讲解 | 代码 + 原理 |
-| 3. 提交推送 | `git add` → `git commit` → `git push -u origin feature/m3-react` | 小步提交 |
+| 3. 提交推送 | 见下方 **「子步 commit 约定」** | 小步提交 + 你 review |
 | 4. 开 PR | `gh pr create --title "M3: React 前端" --body "..."` | 合并申请 |
 | 5. Review | 在 GitHub 看 Files changed，口头答 3 道面试题 | Code Review 意识 |
 | 6. 合并 | `gh pr merge --merge` 或网页点 Merge | 合进 master |
+
+### 子步 commit 约定（M4 起 · 你已确认）
+
+每完成 **Mx.y** 一小步：
+
+1. Agent **先给出拟用 commit message + 文件清单**（不执行 commit）
+2. 你在对话里 **打勾确认**（可改 message）
+3. Agent 执行 `git add` → `git commit` → **`git push`** 到当前 feature 分支
+4. **不进仓库**：`.env`、`data/chroma/*`；`data/bm25/*` 由 `import_docs` 本地生成（与 chroma 同策略）
+
+Milestone 全部子步 commit 并 push 后，再 **开 PR → merge master**。
 
 ### PR 描述模板（每次我会帮你写）
 
@@ -311,7 +326,7 @@ flowchart LR
 | **M2 基础 RAG** | PDF 上传 → 切块 → 检索 → 问答 | 2～3 次 session | M2.3 完成，待验收 |
 | **M3 全栈** | React 前端 + SSE 流式 | 2 次 session | 未开始 |
 | **M4 进阶** | LangGraph 评分 或 混合检索（二选一） | 1～2 次 session | 未开始 |
-| **M5 简历交付** | Docker + README + 20 道面试题 | 1～2 次 session | 未开始 |
+| **M5 简历交付** | Docker + README + 面试 + **pgvector**（见 [M5-steps.md](./M5-steps.md)） | 2～4 次 session | 未开始 |
 
 **整体周期**：实习期 2～3 个月都合理；有空就多推进，忙就停在一 milestone 不往下走。
 
@@ -340,7 +355,7 @@ flowchart LR
 | M2 | RAG 最小链路 | PDF 问答成功 | RAG 五步、chunk、Embedding |
 | M3 | 上传 + React + 流式 | 浏览器完整体验 | SSE、前后端分工 |
 | M4 | LangGraph 或混合检索 | 讲清「检索失败怎么办」 | CRAG / BM25 vs 向量 |
-| M5 | Docker + README + 模拟面试 | 20 题 ≥15 题 | 3 分钟项目介绍 |
+| M5 | Docker + README + 模拟面试 + pgvector | 20 题 ≥15 题 | 3 分钟介绍 + 为何上 pgvector |
 
 **参考仓库角色**：我参考架构帮你实现；你负责 **跑通、理解、能讲**。
 

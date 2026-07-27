@@ -43,8 +43,9 @@ function UploadPanel({ disabled = false }: UploadPanelProps) {
     e.target.value = "";
     if (!file || uploading || disabled) return;
 
-    if (!file.name.toLowerCase().endsWith(".pdf")) {
-      setUploadError("目前只支持 PDF 文件");
+    const lower = file.name.toLowerCase();
+    if (!lower.endsWith(".pdf") && !lower.endsWith(".md")) {
+      setUploadError("目前只支持 PDF 或 Markdown（.pdf / .md）");
       return;
     }
 
@@ -71,7 +72,7 @@ function UploadPanel({ disabled = false }: UploadPanelProps) {
   return (
     <section className="upload-panel card">
       <h2>知识库</h2>
-      <p className="upload-panel__hint">上传 PDF → 切块 → 写入向量库（M3.2）</p>
+      <p className="upload-panel__hint">上传 PDF / Markdown → 切块 → 写入向量库</p>
 
       <div className="upload-panel__stats">
         <div className="upload-panel__stat-row">
@@ -92,7 +93,7 @@ function UploadPanel({ disabled = false }: UploadPanelProps) {
       <input
         ref={inputRef}
         type="file"
-        accept=".pdf,application/pdf"
+        accept=".pdf,.md,application/pdf,text/markdown"
         className="upload-panel__file-input"
         disabled={disabled || uploading}
         onChange={(e) => void handleFileChange(e)}
@@ -103,7 +104,7 @@ function UploadPanel({ disabled = false }: UploadPanelProps) {
         disabled={disabled || uploading}
         onClick={() => inputRef.current?.click()}
       >
-        {uploading ? "上传并索引中…" : "选择 PDF 上传"}
+        {uploading ? "上传并索引中…" : "选择 PDF / Markdown 上传"}
       </button>
 
       {uploadError && <p className="upload-panel__error">{uploadError}</p>}

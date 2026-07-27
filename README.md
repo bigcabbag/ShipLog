@@ -1,6 +1,9 @@
 ﻿# rag-agent
 
-DevKit 研发团队文档助手 — 企业知识库 RAG 学习项目（Python 3.12 + uv + FastAPI + React）。
+**DevKit — 研发团队文档助手**：帮新人查本仓库 PLAN、分步指南、qa 卡与 API 说明。  
+业务场景详见 [docs/SCENARIO.md](./docs/SCENARIO.md)。
+
+企业知识库 RAG 学习项目（Python 3.12 + uv + FastAPI + React）。
 
 ## 环境要求
 
@@ -31,13 +34,20 @@ cd E:\01_Dev\langChain
 .\scripts\dev-frontend.ps1
 ```
 
-**4. 浏览器验收**
+**4. 导入本项目文档（M4.0 推荐）**
+
+```powershell
+uv run python scripts/import_docs.py
+```
+
+会把 `docs/*.md` 写入向量库。然后浏览器验收：
 
 打开 http://127.0.0.1:5173
 
-1. 左侧上传 PDF → 看到 `vector_count > 0`
-2. 右侧提问（默认流式）→ 逐字生成 + 引用来源
-3. 可关「流式输出」对比非流式 `POST /chat`
+1. 确认 vector_count > 0（或左侧刷新统计）
+2. 问「M3 分几步？」→ 应引用 `M3-steps.md` + 引用来源
+3. 也可上传 PDF / Markdown 单文件补充知识库
+4. 默认流式提问，可关「流式输出」对比非流式
 
 后端健康检查：http://127.0.0.1:8000/health  
 API 文档：http://127.0.0.1:8000/docs
@@ -57,14 +67,17 @@ uv run python main.py
 
 | 接口 | 说明 |
 |------|------|
-| `POST /documents/upload` | 上传 PDF 入库 |
+| `POST /documents/upload` | 上传 PDF / Markdown 入库 |
 | `GET /documents/stats` | 向量库统计 |
 | `POST /chat` | 非流式对话（JSON 一次返回） |
 | `POST /chat/stream` | SSE 流式对话（M3.3+） |
 
+| 脚本 | `uv run python scripts/import_docs.py` 批量导入 `docs/*.md` |
+| 评估 | `uv run python eval/run_eval.py` 输出 Recall@3（见 [eval/BASELINE.md](./eval/BASELINE.md)） |
+
 ## 学习进度
 
-见 [docs/PLAN.md](./docs/PLAN.md) · 子步 [docs/M3-steps.md](./docs/M3-steps.md) · 面试题 [docs/qa-m3.md](./docs/qa-m3.md)
+见 [docs/PLAN.md](./docs/PLAN.md) · [docs/M4-steps.md](./docs/M4-steps.md) · 面试题 [docs/qa-m4.md](./docs/qa-m4.md)
 
 ## Cursor / VS Code
 

@@ -4,7 +4,7 @@
 > 业务场景见 [SCENARIO.md](./SCENARIO.md)。  
 > 场景面试题见 [qa-scenario-guide.md](./qa-scenario-guide.md)。
 
-**当前进度：未开始（M3 完成后启动）**
+**当前进度：M4.4 已完成代码，待你验收（下一步 M5.0 Docker）**
 
 ---
 
@@ -135,4 +135,4 @@ flowchart LR
 
 ## 下一步
 
-M3 全部完成后说 **「继续 M4.0」**。
+M4.4 完成后进入 [M5-steps.md](./M5-steps.md)（M5.3 为 pgvector 最小迁移，放最后）。
