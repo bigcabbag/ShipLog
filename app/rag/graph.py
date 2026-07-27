@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import Literal, TypedDict
+import operator
+from typing import Annotated, Literal, Required, TypedDict
 
 from langchain_core.documents import Document
 from langgraph.graph import END, START, StateGraph
@@ -11,6 +12,7 @@ from langgraph.graph import END, START, StateGraph
 from app.llm import chat
 from app.rag.context import RAG_SYSTEM_PROMPT, build_context
 from app.rag.retriever import retrieve
+from app.rag.trace import doc_entry, new_trace_id, save_trace
  
 MAX_REWRITES = 1
 
@@ -34,9 +36,11 @@ ABSTAIN_NO_RELEVANT = "文档中未找到相关信息，无法回答该问题。
 
 
 class CragState(TypedDict, total=False):
-    question: str
-    search_query: str
-    top_k: int
+    question: Required[str]
+    search_query: Required[str]
+    top_k: Required[int]
+    trace_id: Required[str]
+    trace_steps: Annotated[list[dict], operator.add]
     system_prompt: str | None
     documents: list[Document]
     relevant_docs: list[Document]
@@ -69,13 +73,34 @@ def _parse_grade_response(raw: str, docs: list[Document]) -> list[Document]:
 
 async def _retrieve_node(state: CragState) -> dict:
     docs = retrieve(state["search_query"], top_k=state["top_k"])
-    return {"documents": docs}
+    return {
+        "documents": docs,
+        "trace_steps": [
+            {
+                "step": "retrieve",
+                "search_query": state["search_query"],
+                "top_k": state["top_k"],
+                "retrieved": [doc_entry(d, i) for i, d in enumerate(docs, start=1)],
+            }
+        ],
+    }
 
 
 async def _grade_node(state: CragState) -> dict:
     docs = state.get("documents") or []
     if not docs:
-        return {"route": "abstain", "abstain_reply": ABSTAIN_EMPTY_KB}
+        return {
+            "route": "abstain",
+            "abstain_reply": ABSTAIN_EMPTY_KB,
+            "trace_steps": [
+                {
+                    "step": "grade",
+                    "route": "abstain",
+                    "reason": "empty_kb",
+                    "relevant": [],
+                }
+            ],
+        }
 
     raw = await chat(
         GRADE_PROMPT.format(
@@ -86,10 +111,43 @@ async def _grade_node(state: CragState) -> dict:
     )
     relevant = _parse_grade_response(raw, docs)
     if relevant:
-        return {"relevant_docs": relevant, "route": "generate"}
+        return {
+            "relevant_docs": relevant,
+            "route": "generate",
+            "trace_steps": [
+                {
+                    "step": "grade",
+                    "route": "generate",
+                    "grade_raw": raw.strip()[:200],
+                    "relevant": [doc_entry(d, i) for i, d in enumerate(relevant, start=1)],
+                }
+            ],
+        }
     if state.get("rewrite_count", 0) < MAX_REWRITES:
-        return {"route": "rewrite"}
-    return {"route": "abstain", "abstain_reply": ABSTAIN_NO_RELEVANT}
+        return {
+            "route": "rewrite",
+            "trace_steps": [
+                {
+                    "step": "grade",
+                    "route": "rewrite",
+                    "grade_raw": raw.strip()[:200],
+                    "relevant": [],
+                }
+            ],
+        }
+    return {
+        "route": "abstain",
+        "abstain_reply": ABSTAIN_NO_RELEVANT,
+        "trace_steps": [
+            {
+                "step": "grade",
+                "route": "abstain",
+                "reason": "no_relevant_after_rewrite",
+                "grade_raw": raw.strip()[:200],
+                "relevant": [],
+            }
+        ],
+    }
 
 
 async def _rewrite_node(state: CragState) -> dict:
@@ -98,9 +156,17 @@ async def _rewrite_node(state: CragState) -> dict:
         system_prompt="只输出改写后的问题。",
     )
     query = new_query.strip() or state["question"]
+    rewrite_count = state.get("rewrite_count", 0) + 1
     return {
         "search_query": query,
-        "rewrite_count": state.get("rewrite_count", 0) + 1,
+        "rewrite_count": rewrite_count,
+        "trace_steps": [
+            {
+                "step": "rewrite",
+                "search_query": query,
+                "rewrite_count": rewrite_count,
+            }
+        ],
     }
 
 
@@ -111,12 +177,31 @@ async def _build_generate_node(state: CragState) -> dict:
     system_prompt = state.get("system_prompt")
     if system_prompt:
         rag_prompt = f"{system_prompt}\n\n{rag_prompt}"
-    return {"rag_prompt": rag_prompt, "sources": sources}
+    return {
+        "rag_prompt": rag_prompt,
+        "sources": sources,
+        "trace_steps": [
+            {
+                "step": "build_generate",
+                "source_count": len(sources),
+                "sources": [s.get("source") for s in sources],
+            }
+        ],
+    }
 
 
 async def _abstain_node(state: CragState) -> dict:
     reply = state.get("abstain_reply") or ABSTAIN_NO_RELEVANT
-    return {"abstain_reply": reply, "sources": []}
+    return {
+        "abstain_reply": reply,
+        "sources": [],
+        "trace_steps": [
+            {
+                "step": "abstain",
+                "reply": reply,
+            }
+        ],
+    }
 
 
 def _route_after_grade(state: CragState) -> str:
@@ -159,20 +244,35 @@ async def run_crag_prepare(
     *,
     top_k: int = 3,
     system_prompt: str | None = None,
-) -> tuple[str | None, list[dict], str | None]:
-    """CRAG 预处理：与 prepare_rag_stream 相同返回值。"""
+) -> tuple[str | None, list[dict], str | None, str]:
+    """CRAG 预处理：返回 rag_prompt、sources、early_reply、trace_id。"""
+    trace_id = new_trace_id()
     graph = get_crag_graph()
     result = await graph.ainvoke(
         {
             "question": message,
             "search_query": message,
             "top_k": top_k,
+            "trace_id": trace_id,
+            "trace_steps": [],
             "system_prompt": system_prompt,
             "rewrite_count": 0,
         }
     )
 
-    if result.get("route") == "abstain" or result.get("abstain_reply"):
-        return None, [], result.get("abstain_reply", ABSTAIN_NO_RELEVANT)
+    save_trace(
+        {
+            "trace_id": trace_id,
+            "question": message,
+            "top_k": top_k,
+            "route": result.get("route"),
+            "rewrite_count": result.get("rewrite_count", 0),
+            "steps": result.get("trace_steps") or [],
+            "abstain_reply": result.get("abstain_reply"),
+        }
+    )
 
-    return result.get("rag_prompt"), result.get("sources") or [], None
+    if result.get("route") == "abstain" or result.get("abstain_reply"):
+        return None, [], result.get("abstain_reply", ABSTAIN_NO_RELEVANT), trace_id
+
+    return result.get("rag_prompt"), result.get("sources") or [], None, trace_id

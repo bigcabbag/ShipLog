@@ -71,16 +71,6 @@ function App() {
           <ChatPanel disabled={!backendReady} />
         </div>
       </div>
-
-      <section className="card muted">
-        <h2>验收（M4.0）</h2>
-        <ol className="tips-list">
-          <li>终端运行 <code>uv run python scripts/import_docs.py</code></li>
-          <li>确认 vector_count &gt; 0</li>
-          <li>问「M3 分几步？」→ 回答应引用 M3-steps.md 内容</li>
-          <li>无需外部简历 PDF 也能演示 DevKit 场景</li>
-        </ol>
-      </section>
     </main>
   );
 }

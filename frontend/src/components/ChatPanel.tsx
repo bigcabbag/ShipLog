@@ -9,6 +9,7 @@ export type ChatMessage = {
   content: string;
   sources?: SourceChunk[];
   model?: string;
+  traceId?: string;
   error?: boolean;
 };
 
@@ -72,10 +73,11 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
                 ),
               );
             },
-            onDone: ({ model, sources }) => {
+            onDone: ({ model, sources, trace_id }) => {
               patchMessage(assistantId, {
                 model: model || undefined,
                 sources: sources ?? undefined,
+                traceId: trace_id ?? undefined,
               });
             },
           },
@@ -117,6 +119,7 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
           content: data.reply,
           sources: data.sources ?? undefined,
           model: data.model,
+          traceId: data.trace_id ?? undefined,
         },
       ]);
     } catch (err: unknown) {
@@ -196,6 +199,11 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
             <p className="chat-bubble__content">
               {msg.content || (loading && msg.role === "assistant" ? "…" : "")}
             </p>
+            {msg.traceId && !msg.error && (
+              <p className="chat-bubble__meta">
+                trace：<code>{msg.traceId}</code>
+              </p>
+            )}
             {msg.model && !msg.error && (
               <p className="chat-bubble__meta">模型：{msg.model}</p>
             )}

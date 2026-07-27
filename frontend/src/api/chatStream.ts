@@ -4,6 +4,7 @@ import type { ChatRequestBody, SourceChunk } from "./chat";
 export type ChatStreamDone = {
   model: string;
   sources: SourceChunk[] | null;
+  trace_id?: string | null;
 };
 
 export type ChatStreamHandlers = {
@@ -16,6 +17,7 @@ type SsePayload = {
   done?: boolean;
   model?: string;
   sources?: SourceChunk[] | null;
+  trace_id?: string | null;
   error?: string;
 };
 
@@ -101,6 +103,7 @@ export async function postChatStream(
         handlers.onDone({
           model: payload.model ?? "",
           sources: payload.sources ?? null,
+          trace_id: payload.trace_id ?? null,
         });
         finished = true;
         return;

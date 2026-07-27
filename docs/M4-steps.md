@@ -4,7 +4,7 @@
 > 业务场景见 [SCENARIO.md](./SCENARIO.md)。  
 > 场景面试题见 [qa-scenario-guide.md](./qa-scenario-guide.md)。
 
-**当前进度：M4.3 已完成代码，待你验收（下一步 M4.4 trace_id）**
+**当前进度：M4.4 已完成代码，待你验收（下一步 M5.0 Docker）**
 
 ---
 

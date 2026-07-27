@@ -15,6 +15,7 @@ from app.rag.loader import (
     load_and_split_document,
 )
 from app.rag.store import get_index_stats, index_chunks
+from app.rag.trace import load_trace
 from app.schemas import (
     ChatRequest,
     ChatResponse,
@@ -141,7 +142,7 @@ async def chat_endpoint(body: ChatRequest):
     try:
         settings = get_settings()
         if body.use_rag:
-            reply, raw_sources = await rag_chat(
+            reply, raw_sources, trace_id = await rag_chat(
                 body.message,
                 top_k=body.top_k,
                 system_prompt=body.system_prompt,
@@ -151,6 +152,7 @@ async def chat_endpoint(body: ChatRequest):
                 reply=reply,
                 model=settings["model"],
                 sources=sources,
+                trace_id=trace_id,
             )
 
         reply = await chat(body.message, body.system_prompt)
@@ -174,9 +176,10 @@ async def chat_stream_endpoint(body: ChatRequest):
             model = settings["model"]
             sources: list[dict] | None = None
             stream_prompt: str | None = body.system_prompt
+            trace_id: str | None = None
 
             if body.use_rag:
-                rag_prompt, raw_sources, early_reply = await prepare_rag_stream_async(
+                rag_prompt, raw_sources, early_reply, trace_id = await prepare_rag_stream_async(
                     body.message,
                     top_k=body.top_k,
                     system_prompt=body.system_prompt,
@@ -184,7 +187,7 @@ async def chat_stream_endpoint(body: ChatRequest):
                 if early_reply is not None:
                     yield _sse_event({"token": early_reply})
                     yield _sse_event(
-                        {"done": True, "model": model, "sources": []},
+                        {"done": True, "model": model, "sources": [], "trace_id": trace_id},
                     )
                     return
                 stream_prompt = rag_prompt
@@ -198,6 +201,7 @@ async def chat_stream_endpoint(body: ChatRequest):
                     "done": True,
                     "model": model,
                     "sources": sources,
+                    "trace_id": trace_id,
                 }
             )
         except RuntimeError as exc:
@@ -214,6 +218,15 @@ async def chat_stream_endpoint(body: ChatRequest):
             "X-Accel-Buffering": "no",
         },
     )
+
+
+@app.get("/traces/{trace_id}")
+async def get_trace(trace_id: str):
+    """M4.4：按 trace_id 回放当次 CRAG 检索过程。"""
+    record = load_trace(trace_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail=f"trace_id 不存在: {trace_id}")
+    return record
 
 
 @app.post("/documents/upload", response_model=UploadResponse)

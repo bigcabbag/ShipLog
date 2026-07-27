@@ -17,6 +17,7 @@ export type ChatResponseBody = {
   reply: string;
   model: string;
   sources: SourceChunk[] | null;
+  trace_id?: string | null;
 };
 
 export async function postChat(body: ChatRequestBody): Promise<ChatResponseBody> {

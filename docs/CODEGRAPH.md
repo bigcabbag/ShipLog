@@ -24,12 +24,15 @@ POST /chat/stream (main.py)
                       ├─ _rewrite_node → llm.chat
                       ├─ _build_generate_node → context.build_context
                       └─ _abstain_node
+            └─ save_trace (trace.py) → data/traces/traces.jsonl
             └─ (图外) llm.chat_stream 流式生成
 
 POST /chat (main.py)
   └─ chat_endpoint → rag_chat
-       ├─ run_crag_prepare (同上)
+       ├─ run_crag_prepare (同上 + save_trace)
        └─ llm.chat
+
+GET /traces/{trace_id} (main.py) → load_trace (trace.py)
 ```
 
 ## 入库 / 评估（不经 graph）
@@ -45,6 +48,7 @@ POST /documents/upload → load_and_split_document → index_chunks
 | 改什么 | 文件 |
 |--------|------|
 | CRAG 节点/分支 | `app/rag/graph.py` |
+| trace 日志 | `app/rag/trace.py` |
 | RAG 对外 API | `app/rag/rag.py` |
 | prompt/context | `app/rag/context.py` |
 | 向量检索 | `app/rag/retriever.py` |

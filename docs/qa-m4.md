@@ -269,6 +269,48 @@ flowchart TD
 **Q4：** 面试 30 秒怎么讲混合检索？
 
 **A：**
-> M4.1 纯向量 Recall@3 94.4%。API 路径类问题语义检索不稳，M4.3 加 rank_bm25 与向量 **加权 RRF** 融合；入库双写 Chroma + BM25。eval 复测持平，精确词（如 `POST /chat/stream`）排序更合理。下一步可加 Rerank 或 trace 日志定位 Bad case。
+> M4.1 纯向量 Recall@3 94.4%。API 路径类问题语义检索不稳，M4.3 加 rank_bm25 与向量 **加权 RRF** 融合；入库双写 Chroma + BM25。eval 复测持平，精确词（如 `POST /chat/stream`）排序更合理。M4.4 每请求 `trace_id`，CRAG 各步写入 JSONL，`GET /traces/{id}` 回放检索块与改写路径。
+
+---
+
+## 场景题 · M4.4 trace 可观测性
+
+**Q1：** 用户反馈「昨天问 CORS 答错了」，你怎么查？
+
+**A：**
+1. **现象**：用户只记得大概问题，无法复现当时检索命中了哪些 chunk。
+2. **根因**：无请求级 trace，只有应用日志或最终 answer，无法还原 retrieve → grade → rewrite 链路。
+3. **排查**：让用户提供对话时间或界面上的 `trace_id` → `GET /traces/{trace_id}` 看 `steps` 里 retrieve 的 `chunk_id`、grade 的 `route`、是否 rewrite。
+4. **方案**：每次 RAG 请求生成 `trace_id`，各 LangGraph 节点 append `trace_steps`，落盘 JSONL；前端气泡展示 trace 便于 support 对齐。
+5. **本项目**：`app/rag/trace.py` + `graph.py` 节点日志；`data/traces/traces.jsonl`（gitignore）；`main.py` 的 `/traces/{trace_id}`。
+
+---
+
+**Q2：** trace 日志量大了会不会拖慢 `/chat`？
+
+**A：**
+1. **现象**：QPS 上来后 `traces.jsonl` 暴涨，磁盘 IO 成为瓶颈。
+2. **根因**：同步 append 大 JSON、单文件无限增长、与请求路径同线程。
+3. **排查**：看 p99 延迟与磁盘写入；统计单条 trace 大小与 QPS。
+4. **方案**：异步写队列、按日轮转、热数据 Redis/冷数据 PG；M5 可先 Docker volume 挂载，后续再迁表。
+5. **本项目**：M4.4 学习版同步写小 JSONL，单条仅 CRAG 步骤摘要，不含 embedding；生产会换结构化存储。
+
+---
+
+**Q3：** grade 节点 LLM 判 NONE 但人工看片段明明相关，怎么定位？
+
+**A：**
+1. **现象**：eval 某题 Recall 够但 CRAG 拒答，或 answer 偏。
+2. **根因**：grade prompt 过严、片段截断 300 字丢关键词、或 rewrite 把 query 带偏。
+3. **排查**：打开 trace 中 `grade.grade_raw` 与 `retrieve.retrieved` 列表，对比 chunk 正文；看是否有 rewrite 步。
+4. **方案**：调 grade prompt、加长 snippet、或 bad case 进 eval 集回归。
+5. **本项目**：`trace_steps` 含 `grade_raw`（截断 200 字）与各步 `chunk_id`，可对照 `docs/` 源文件。
+
+---
+
+**Q4：** 面试 30 秒怎么讲 trace？
+
+**A：**
+> 每个 RAG 请求有 `trace_id`，LangGraph 的 retrieve/grade/rewrite 节点把检索块、路由决策写入 trace；接口返回 trace_id，支持 `GET /traces/{id}` 回放。线上答错时不用猜，直接看当次命中了哪些 chunk、有没有改写 query，缩短 Bad case 定位时间。
 
 ---
