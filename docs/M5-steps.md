@@ -3,7 +3,7 @@
 > 前置：M4 全部完成（含 M4.4 trace_id）。  
 > 场景面试题见 [qa-scenario-guide.md](./qa-scenario-guide.md)。
 
-**当前进度：未开始（M4 完成后说「继续 M5.0」）**
+**当前进度：M5.0 Docker Compose 进行中（分支 `feature/m5-docker`）**
 
 ---
 

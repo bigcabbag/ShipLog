@@ -20,7 +20,7 @@
   - [x] M4.2 LangGraph CRAG（对标 agentic-rag-for-dummies）
   - [x] M4.3 BM25+向量 RRF（对标 CliffsCai）
   - [x] M4.4 trace_id 检索日志
-- [ ] **M5** 简历交付 → [M5-steps.md](./M5-steps.md) · [qa-scenario-guide.md](./qa-scenario-guide.md)
+- [ ] **M5** 简历交付 ← **进行中** → [M5-steps.md](./M5-steps.md) · [qa-scenario-guide.md](./qa-scenario-guide.md)
   - [ ] M5.0 Docker Compose（仍用 Chroma）
   - [ ] M5.1 README 简历化 + 3 分钟介绍
   - [ ] M5.2 场景面试 20 题自测
