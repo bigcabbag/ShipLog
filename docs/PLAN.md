@@ -20,11 +20,11 @@
   - [x] M4.2 LangGraph CRAG（对标 agentic-rag-for-dummies）
   - [x] M4.3 BM25+向量 RRF（对标 CliffsCai）
   - [x] M4.4 trace_id 检索日志
-- [ ] **M5** 简历交付 ← **进行中** → [M5-steps.md](./M5-steps.md) · [qa-scenario-guide.md](./qa-scenario-guide.md)
-  - [ ] M5.0 Docker Compose（仍用 Chroma）
-  - [ ] M5.1 README 简历化 + 3 分钟介绍
-  - [ ] M5.2 场景面试 20 题自测
-  - [ ] M5.3 **pgvector 最小迁移**（仅换向量层，放 M5 最后）
+- [ ] **M5** 简历交付 ← **进行中** → [M5-steps.md](./M5-steps.md) · [qa-m5.md](./qa-m5.md) · [qa-scenario-guide.md](./qa-scenario-guide.md)
+  - [x] M5.0 Docker Compose（仍用 Chroma）✅ 后端 8032 + 前端 5173 已验收
+  - [ ] M5.1 **pgvector + trace 迁 PostgreSQL**
+  - [ ] M5.2 README 简历化 + 3 分钟介绍
+  - [ ] M5.3 场景面试 20 题自测
 
 **项目场景**：DevKit 研发团队文档助手（详见 [SCENARIO.md](./SCENARIO.md)）  
 **面试题规则**：每步出**场景题**（面经驱动），见 [qa-scenario-guide.md](./qa-scenario-guide.md)
@@ -326,7 +326,7 @@ flowchart LR
 | **M2 基础 RAG** | PDF 上传 → 切块 → 检索 → 问答 | 2～3 次 session | M2.3 完成，待验收 |
 | **M3 全栈** | React 前端 + SSE 流式 | 2 次 session | 未开始 |
 | **M4 进阶** | LangGraph 评分 或 混合检索（二选一） | 1～2 次 session | 未开始 |
-| **M5 简历交付** | Docker + README + 面试 + **pgvector**（见 [M5-steps.md](./M5-steps.md)） | 2～4 次 session | 未开始 |
+| **M5 简历交付** | Docker → **pgvector+trace** → README → 面试（见 [M5-steps.md](./M5-steps.md)） | 2～4 次 session | M5.0 进行中 |
 
 **整体周期**：实习期 2～3 个月都合理；有空就多推进，忙就停在一 milestone 不往下走。
 
@@ -355,7 +355,7 @@ flowchart LR
 | M2 | RAG 最小链路 | PDF 问答成功 | RAG 五步、chunk、Embedding |
 | M3 | 上传 + React + 流式 | 浏览器完整体验 | SSE、前后端分工 |
 | M4 | LangGraph 或混合检索 | 讲清「检索失败怎么办」 | CRAG / BM25 vs 向量 |
-| M5 | Docker + README + 模拟面试 + pgvector | 20 题 ≥15 题 | 3 分钟介绍 + 为何上 pgvector |
+| M5 | Docker → pgvector+trace → README → 模拟面试 | 20 题 ≥15 题 | 3 分钟介绍 + PG 栈 |
 
 **参考仓库角色**：我参考架构帮你实现；你负责 **跑通、理解、能讲**。
 

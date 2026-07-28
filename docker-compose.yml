@@ -1,0 +1,34 @@
+# M5.0：一键启动后端 + 前端（Chroma 数据卷；M5.1 再加 postgres）
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8032:8000"
+    env_file:
+      - .env
+    environment:
+      HF_ENDPOINT: ${HF_ENDPOINT:-https://hf-mirror.com}
+    volumes:
+      - ./data/chroma:/app/data/chroma
+      - ./data/bm25:/app/data/bm25
+      - ./data/traces:/app/data/traces
+      - ./data/uploads:/app/data/uploads
+      - hf_cache:/root/.cache/huggingface
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: http://localhost:8032
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  hf_cache:

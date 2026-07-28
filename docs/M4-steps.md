@@ -135,4 +135,4 @@ flowchart LR
 
 ## 下一步
 
-M4.4 完成后进入 [M5-steps.md](./M5-steps.md)（M5.3 为 pgvector 最小迁移，放最后）。
+M4.4 完成后进入 [M5-steps.md](./M5-steps.md)（M5.0 Docker → M5.1 pgvector+trace → M5.2 README → M5.3 面试）。
