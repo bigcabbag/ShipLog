@@ -111,26 +111,42 @@ def get_bm25_stats() -> dict[str, int]:
 
 
 def rebuild_from_vector_store() -> int:
-    """从 Chroma 全量重建 BM25 语料（已有向量库、首次启用 M4.3 时用）。"""
-    from app.rag.store import get_vector_store
+    """M5.1：从 PostgreSQL 全量重建 BM25 语料。"""
+    from sqlalchemy import create_engine, text
 
-    store = get_vector_store()
-    count = int(store._collection.count())
-    if count == 0:
+    from app.config import get_database_url
+
+    engine = create_engine(get_database_url())
+    with engine.connect() as conn:
+        result = conn.execute(
+            text(
+                """
+                SELECT e.document, e.cmetadata
+                FROM langchain_pg_embedding e
+                JOIN langchain_pg_collection c ON e.collection_id = c.uuid
+                WHERE c.name = :name
+                """,
+            ),
+            {"name": "rag_documents"},
+        )
+        rows = result.fetchall()
+
+    if not rows:
         _save_records([])
         return 0
 
-    raw = store.get(include=["documents", "metadatas"])
     records: list[dict[str, Any]] = []
     per_source_index: dict[str, int] = {}
 
-    for text, meta in zip(raw["documents"], raw["metadatas"], strict=True):
+    for row in rows:
+        text_content = row[0]
+        meta = row[1] if isinstance(row[1], dict) else json.loads(row[1] or "{}")
         meta = dict(meta or {})
         source = str(meta.get("source", "unknown"))
         idx = per_source_index.get(source, 0)
         meta["chunk_id"] = meta.get("chunk_id") or f"{source}:{idx}"
         per_source_index[source] = idx + 1
-        records.append({"page_content": text, "metadata": meta})
+        records.append({"page_content": text_content, "metadata": meta})
 
     _save_records(records)
     return len(records)

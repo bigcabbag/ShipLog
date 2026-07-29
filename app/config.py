@@ -21,6 +21,18 @@ def get_embedding_model() -> str:
 
 
 @lru_cache
+def get_database_url() -> str:
+    """M5.1：PostgreSQL 连接串（Docker 由 compose 注入，本地开发可在 .env 配置）。"""
+    url = os.getenv("DATABASE_URL", "").strip()
+    if not url:
+        raise RuntimeError(
+            "未找到 DATABASE_URL，请在 .env 或环境变量中配置 "
+            "（Docker 用户由 docker-compose.yml 自动注入）"
+        )
+    return url
+
+
+@lru_cache
 def get_settings() -> dict[str, str]:
     api_key = os.getenv("DEEPSEEK_API_KEY", "").strip()
     base_url = os.getenv("LLM_BASE_URL", "https://api.deepseek.com/v1").strip()
