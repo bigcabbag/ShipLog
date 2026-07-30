@@ -1,4 +1,4 @@
-"""M4.0：把 docs/*.md 一键导入 Chroma 向量库。
+"""M5.2：把 docs/kb/**/*.md 一键导入 PostgreSQL 向量库。
 
 用法（项目根目录）：
     uv run python scripts/import_docs.py
@@ -17,13 +17,13 @@ from app.rag.bm25_index import rebuild_from_vector_store
 from app.rag.loader import load_and_split_markdown
 from app.rag.store import get_index_stats, index_chunks
 
-DOCS_DIR = ROOT / "docs"
+KB_DIR = ROOT / "docs" / "kb"
 
 
 def main() -> None:
-    md_files = sorted(DOCS_DIR.glob("*.md"))
+    md_files = sorted(KB_DIR.rglob("*.md"))
     if not md_files:
-        print(f"No markdown files in {DOCS_DIR}")
+        print(f"No markdown files in {KB_DIR}")
         sys.exit(1)
 
     total_chunks = 0
@@ -32,9 +32,10 @@ def main() -> None:
         if not chunks:
             print(f"skip (empty): {path.name}")
             continue
-        indexed = index_chunks(chunks, source=path.name)
+        source = path.relative_to(KB_DIR).as_posix()
+        indexed = index_chunks(chunks, source=source)
         total_chunks += indexed
-        print(f"OK {path.name}: {indexed} chunks")
+        print(f"OK {source}: {indexed} chunks")
 
     stats = get_index_stats()
     bm25_count = rebuild_from_vector_store()

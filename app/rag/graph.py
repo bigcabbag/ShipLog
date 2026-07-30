@@ -28,11 +28,11 @@ GRADE_PROMPT = """你是检索质量评估员。判断文档片段是否能帮�
 
 REWRITE_PROMPT = """用户原问题：{question}
 
-当前检索结果与问题不够相关。请改写为一个更适合在 DevKit 项目文档（PLAN、M3-steps、qa 卡、API 说明）里检索的简短中文问题。
+当前检索结果与问题不够相关。请改写为一个更适合在 ShipLog 知识库（Runbook 排障手册、事故复盘、架构文档）里检索的简短中文问题。
 只输出改写后的问题，不要解释。"""
 
-ABSTAIN_EMPTY_KB = "知识库中暂无相关文档，请先上传 PDF 或运行 import_docs.py。"
-ABSTAIN_NO_RELEVANT = "文档中未找到相关信息，无法回答该问题。"
+ABSTAIN_EMPTY_KB = "知识库中暂无 Runbook 文档，请先运行 import_docs.py 导入知识库。"
+ABSTAIN_NO_RELEVANT = "知识库中未找到相关 Runbook，无法回答该问题。建议查阅官方文档或联系 SRE。"
 
 
 class CragState(TypedDict, total=False):

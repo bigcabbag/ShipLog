@@ -39,10 +39,10 @@ function App() {
   return (
     <main className="page">
       <header className="header">
-        <p className="eyebrow">DevKit · M4 真实文档 RAG</p>
-        <h1>研发团队文档助手</h1>
+        <p className="eyebrow">ShipLog · On-call 故障排查 RAG</p>
+        <h1>研发 On-call 排查助手</h1>
         <p className="subtitle">
-          索引本项目 docs（PLAN、分步指南、qa 卡）→ 流式问答 + 引用来源（DevKit 场景）
+          索引 Runbook、事故复盘、架构文档 → 混合检索 + CRAG 拒答 + 流式问答（ShipLog 场景）
         </p>
       </header>
 

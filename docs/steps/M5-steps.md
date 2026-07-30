@@ -2,9 +2,9 @@
 
 > 前置：M4 全部完成（含 M4.4 trace_id）。  
 > **业务场景**：M4 阶段为 DevKit 文档助手；**M5.2 起切换为 ShipLog On-call 助手**（见 [SCENARIO.md](./SCENARIO.md)）。  
-> 场景面试题见 [qa-scenario-guide.md](./qa-scenario-guide.md)。
+> 场景面试题见 [qa-scenario-guide.md](../qa/qa-scenario-guide.md)。
 
-**当前进度：M5.1 已验收通过（pgvector + trace 迁 PostgreSQL），待 commit**
+**当前进度：M5.2 已验收通过（ShipLog 场景定稿 + 量化评估增强，Recall@3=86.8%、幻觉率 17.2%→11.5%、43题含不覆盖场景）**
 
 ---
 
@@ -26,7 +26,7 @@ flowchart LR
 | M5.2 | **ShipLog 场景定稿**：kb 知识库 + eval + prompt/UI | `docs/kb/`、`import_docs.py`、prompt、前端文案 | 「On-call 为什么不能胡编命令」 |
 | M5.3 | README 简历化 + 3 分钟介绍稿 | `README.md`、`docs/PITCH.md` | 「用 3 分钟介绍 ShipLog」 |
 | M5.4 | **On-call 输入亮点**：PDF 热更新 + **截图→文本→RAG（DeepSeek V4）** | 上传、`vision.py`、`llm.py`、ChatPanel | 「贴告警图怎么处理 / 为何不做端到端多模态」 |
-| M5.5 | 模拟面试 20 题验收 | [qa-scenario-guide.md](./qa-scenario-guide.md) | 场景题 ≥15/20 |
+| M5.5 | 模拟面试 20 题验收 | [qa-scenario-guide.md](../qa/qa-scenario-guide.md) | 场景题 ≥15/20 |
 
 > **约定**  
 > - **M5.0～M5.1**：技术栈收尾（Docker、PG），**不改业务场景**。  
@@ -255,11 +255,11 @@ sequenceDiagram
 
 ## M5.5 场景面试 20 题
 
-**目标**：按 [qa-scenario-guide.md](./qa-scenario-guide.md) + [interview/analysis/project-mapping.md](./interview/analysis/project-mapping.md) 自测。
+**目标**：按 [qa-scenario-guide.md](../qa/qa-scenario-guide.md) + [interview/analysis/project-mapping.md](../interview/analysis/project-mapping.md) 自测。
 
 ### 要做的事
 
-- 更新 `docs/qa-m5.md`（ShipLog 场景题）
+- 更新 `docs/qa/qa-m5.md`（ShipLog 场景题）
 - 模拟追问：Retrieve miss、混合检索、CRAG 拒答、Docker/PG、trace、PDF/截图亮点
 - 对照美团 Agent 面经 [interview/sources/meituan/](./interview/sources/meituan/) 练 🟢 题
 

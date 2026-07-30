@@ -14,9 +14,9 @@ export type ChatMessage = {
 };
 
 const EXAMPLE_QUESTIONS = [
-  "M3 分几步？每步做什么？",
-  "开发期 CORS 怎么验收？",
-  "M2 的 RAG 数据流怎么走？",
+  "Redis 连接超时怎么排查？",
+  "Pod OOMKilled 反复重启怎么办？",
+  "502 Bad Gateway 怎么定位？",
 ];
 
 type ChatPanelProps = {
@@ -146,7 +146,7 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
   return (
     <section className="chat-panel card">
       <div className="chat-panel__head">
-        <h2>DevKit 文档问答</h2>
+        <h2>ShipLog On-call 助手</h2>
         <div className="chat-panel__toggles">
           <label className="chat-panel__rag-toggle">
             <input
@@ -187,7 +187,7 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
       <div className="chat-panel__messages" aria-live="polite">
         {messages.length === 0 && (
           <p className="chat-panel__empty">
-            输入问题开始对话。先运行 <code>uv run python scripts/import_docs.py</code> 导入本项目 docs，或左侧上传 PDF/Markdown。
+            输入问题开始排查。先运行 <code>uv run python scripts/import_docs.py</code> 导入 Runbook 知识库，或左侧上传 PDF。
           </p>
         )}
         {messages.map((msg) => (
@@ -235,7 +235,7 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
         <textarea
           className="chat-panel__input"
           rows={2}
-          placeholder="问项目文档或已上传 PDF 里的内容…"
+          placeholder="问 Runbook、事故复盘或架构相关的问题…"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           disabled={loading || disabled}

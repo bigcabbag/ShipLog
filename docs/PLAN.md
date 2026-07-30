@@ -5,38 +5,38 @@
 ## 当前进度
 
 - [x] **M0** 环境：uv + Python 3.12 + FastAPI `/health`
-- [x] **M1** 首个 LLM：DeepSeek + `/chat` + [qa-m1.md](./qa-m1.md)
-- [x] **M2** 基础 RAG：PDF 上传 → 切块 → 检索 → 问答 → [qa-m2.md](./qa-m2.md)
-- [x] **M3** 全栈：React 前端 + SSE 流式 → [M3-steps.md](./M3-steps.md) · [qa-m3.md](./qa-m3.md) · PR [#1](https://github.com/bigcabbag/rag-agent/pull/1) 已合并
+- [x] **M1** 首个 LLM：DeepSeek + `/chat` + [qa-m1.md](./qa/qa-m1.md)
+- [x] **M2** 基础 RAG：PDF 上传 → 切块 → 检索 → 问答 → [qa-m2.md](./qa/qa-m2.md)
+- [x] **M3** 全栈：React 前端 + SSE 流式 → [M3-steps.md](./steps/M3-steps.md) · [qa-m3.md](./qa/qa-m3.md) · PR [#1](https://github.com/bigcabbag/rag-agent/pull/1) 已合并
   - [x] M3.0 开分支 + Vite/React 脚手架 + CORS
   - [x] M3.1 聊天页（非流式 `POST /chat`）
   - [x] M3.2 上传 PDF + 向量库统计 UI
   - [x] M3.3 后端 `POST /chat/stream` SSE
   - [x] M3.4 前端流式 + 打字机效果
   - [x] M3.5 联调 polish + 问答卡 + PR 合并
-- [x] **M4** 真实化 + 亮点 → [SCENARIO.md](./SCENARIO.md) · [M4-steps.md](./M4-steps.md) · [qa-m4.md](./qa-m4.md) · PR [#2](https://github.com/bigcabbag/rag-agent/pull/2) 已合并
+- [x] **M4** 真实化 + 亮点 → [SCENARIO.md](./SCENARIO.md) · [M4-steps.md](./steps/M4-steps.md) · [qa-m4.md](./qa/qa-m4.md) · PR [#2](https://github.com/bigcabbag/rag-agent/pull/2) 已合并
   - [x] M4.0 Markdown 入库 + DevKit 场景 README
   - [x] M4.1 评估集 20 题 + Recall@3
   - [x] M4.2 LangGraph CRAG（对标 agentic-rag-for-dummies）
   - [x] M4.3 BM25+向量 RRF（对标 CliffsCai）
   - [x] M4.4 trace_id 检索日志
-- [ ] **M5** 简历交付 ← **进行中** → [M5-steps.md](./M5-steps.md) · [qa-m5.md](./qa-m5.md) · [qa-scenario-guide.md](./qa-scenario-guide.md)
+- [ ] **M5** 简历交付 ← **进行中** → [M5-steps.md](./steps/M5-steps.md) · [qa-m5.md](./qa/qa-m5.md) · [qa-scenario-guide.md](./qa/qa-scenario-guide.md)
   - [x] M5.0 Docker Compose（仍用 Chroma）✅ 后端 8032 + 前端 5173 已验收
   - [x] M5.1 **pgvector + trace 迁 PostgreSQL** ✅ 188 chunks + trace 回放已验收
-  - [ ] M5.2 **ShipLog 场景定稿**（`docs/kb/` 知识库 + eval + prompt/UI 换皮）
+  - [x] M5.2 **ShipLog 场景定稿** ✅ kb 知识库 + prompt 换皮 + Recall@3=86.8% + 生成层量化评估（幻觉率 17.2%→11.5%，43题含不覆盖场景）
   - [ ] M5.3 README 简历化 + `PITCH.md` 三分钟稿
   - [ ] M5.4 **On-call 输入亮点**（PDF 热更新 + 截图提问 · DeepSeek V4 思路 A）
   - [ ] M5.5 场景面试 20 题自测
-- [ ] **M6** Agent 演进（可选，M5 完成后）→ [M6-steps.md](./M6-steps.md)
+- [ ] **M6** Agent 演进（可选，M5 完成后）→ [M6-steps.md](./steps/M6-steps.md)
   - [ ] M6.0 Tool Calling：`search_runbook` + `query_incident` +（可选）`web_search`
   - [ ] M6.1 Multi-Agent：Runbook 检索 / 事故分析 /（可选）外部搜索 分工
   - [ ] M6.2 On-call 会话记忆 + 多步排查规划
 
 **项目场景**：**ShipLog — 研发 On-call 故障排查助手**（M5.2 起；M4 阶段为 DevKit 文档助手，见 [SCENARIO.md](./SCENARIO.md)）  
-**面试题规则**：每步出**场景题**（面经驱动），见 [qa-scenario-guide.md](./qa-scenario-guide.md)  
+**面试题规则**：每步出**场景题**（面经驱动），见 [qa-scenario-guide.md](./qa/qa-scenario-guide.md)  
 **秋招面经库**（外部面经收集 + 项目映射 + 升级 backlog）：[interview/README.md](./interview/README.md)
 
-**有空时说**：「继续 M5.1」（按 [M5-steps.md](./M5-steps.md) 一步一步来）
+**有空时说**：「继续 M5.1」（按 [M5-steps.md](./steps/M5-steps.md) 一步一步来）
 
 ## 协作方式：PR 流程（从 M3 起）
 
@@ -333,7 +333,7 @@ flowchart LR
 | **M2 基础 RAG** | PDF 上传 → 切块 → 检索 → 问答 | 2～3 次 session | M2.3 完成，待验收 |
 | **M3 全栈** | React 前端 + SSE 流式 | 2 次 session | 未开始 |
 | **M4 进阶** | LangGraph 评分 或 混合检索（二选一） | 1～2 次 session | 未开始 |
-| **M5 简历交付** | Docker → pgvector+trace → **ShipLog 场景** → README → 面试（见 [M5-steps.md](./M5-steps.md)） | 2～4 次 session | M5.0 已完成，M5.1 待做 |
+| **M5 简历交付** | Docker → pgvector+trace → **ShipLog 场景** → README → 面试（见 [M5-steps.md](./steps/M5-steps.md)） | 2～4 次 session | M5.0 已完成，M5.1 待做 |
 
 **整体周期**：实习期 2～3 个月都合理；有空就多推进，忙就停在一 milestone 不往下走。
 
@@ -412,9 +412,9 @@ flowchart LR
 
 ## 下一步
 
-**M1 已完成**：DeepSeek `/chat` 可用，见 [qa-m1.md](./qa-m1.md)。
+**M1 已完成**：DeepSeek `/chat` 可用，见 [qa-m1.md](./qa/qa-m1.md)。
 
-**下次有空（M2）**：验收 M2.3（`/chat` + `use_rag: true`），见 [qa-m2.md](./qa-m2.md)。
+**下次有空（M2）**：验收 M2.3（`/chat` + `use_rag: true`），见 [qa-m2.md](./qa/qa-m2.md)。
 
 **忙公司项目时**：复习 qa-m1，偶尔跑通 `/health` 和 `/chat` 即可。
 

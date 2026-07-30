@@ -2,7 +2,7 @@
 
 > 前置：M3 全栈完成并 PR 合并。  
 > 业务场景见 [SCENARIO.md](./SCENARIO.md)。  
-> 场景面试题见 [qa-scenario-guide.md](./qa-scenario-guide.md)。
+> 场景面试题见 [qa-scenario-guide.md](../qa/qa-scenario-guide.md)。
 
 **当前进度：M4 已全部合并 master（下一步 M5.0 Docker）**
 
@@ -40,12 +40,12 @@ flowchart LR
 
 ### 验收
 
-- 问「M3 分几步」→ 回答引用 `docs/M3-steps.md`
+- 问「M3 分几步」→ 回答引用 `docs/steps/M3-steps.md`
 - 不再依赖外部简历 PDF 也能演示
 
 ### 场景题
 
-见 [qa-scenario-guide.md](./qa-scenario-guide.md) → 文档更新/多格式
+见 [qa-scenario-guide.md](../qa/qa-scenario-guide.md) → 文档更新/多格式
 
 ---
 

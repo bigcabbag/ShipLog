@@ -1,122 +1,260 @@
 [
   {
     "id": "q01",
-    "question": "M3 分几步？每步做什么？",
-    "expected_sources": ["M3-steps.md"],
+    "question": "Redis 连接超时怎么排查？",
+    "expected_sources": ["runbooks/redis-timeout.md"],
     "should_abstain": false
   },
   {
     "id": "q02",
-    "question": "M3.4 前端要接什么接口实现打字机？",
-    "expected_sources": ["M3-steps.md", "qa-m3.md"],
+    "question": "Redis 连接数打满了怎么办？",
+    "expected_sources": ["runbooks/redis-timeout.md"],
     "should_abstain": false
   },
   {
     "id": "q03",
-    "question": "开发期 CORS 允许哪些前端 origin？",
-    "expected_sources": ["qa-m3.md"],
+    "question": "Redis 慢查询怎么查？",
+    "expected_sources": ["runbooks/redis-timeout.md"],
     "should_abstain": false
   },
   {
     "id": "q04",
-    "question": "POST /chat/stream 返回什么 Content-Type？",
-    "expected_sources": ["M3-steps.md", "qa-m3.md"],
+    "question": "Pod OOMKilled 怎么排查？",
+    "expected_sources": ["runbooks/pod-oom.md"],
     "should_abstain": false
   },
   {
     "id": "q05",
-    "question": "DevKit 文档助手解决什么痛点？",
-    "expected_sources": ["SCENARIO.md"],
+    "question": "Pod 内存泄漏怎么定位？",
+    "expected_sources": ["runbooks/pod-oom.md"],
     "should_abstain": false
   },
   {
     "id": "q06",
-    "question": "M2 的 RAG 数据流怎么走？",
-    "expected_sources": ["M2-steps.md", "qa-m2.md"],
+    "question": "502 Bad Gateway 怎么定位？",
+    "expected_sources": ["runbooks/502-error.md"],
     "should_abstain": false
   },
   {
     "id": "q07",
-    "question": "use_rag 为 true 时后端会做什么？",
-    "expected_sources": ["qa-m3.md", "qa-m2.md"],
+    "question": "Nginx upstream 连接失败是什么原因？",
+    "expected_sources": ["runbooks/502-error.md"],
     "should_abstain": false
   },
   {
     "id": "q08",
-    "question": "默认 chunk_size 和 chunk_overlap 是多少？",
-    "expected_sources": ["M2-steps.md"],
+    "question": "服务回滚怎么操作？",
+    "expected_sources": ["runbooks/rollback.md"],
     "should_abstain": false
   },
   {
     "id": "q09",
-    "question": "从 M3 起 Git 协作走什么流程？",
-    "expected_sources": ["PLAN.md", "M3-steps.md"],
+    "question": "K8s deployment 回滚到指定版本用什么命令？",
+    "expected_sources": ["runbooks/rollback.md"],
     "should_abstain": false
   },
   {
     "id": "q10",
-    "question": "M4.2 LangGraph CRAG 要做什么？",
-    "expected_sources": ["M4-steps.md"],
+    "question": "磁盘空间满了怎么排查？",
+    "expected_sources": ["runbooks/disk-full.md"],
     "should_abstain": false
   },
   {
     "id": "q11",
-    "question": "M4.3 混合检索对标哪个 GitHub 项目？",
-    "expected_sources": ["M4-steps.md", "SCENARIO.md"],
+    "question": "ShipLog 有哪些服务？服务拓扑是什么？",
+    "expected_sources": ["architecture/service-topology.md"],
     "should_abstain": false
   },
   {
     "id": "q12",
-    "question": "为什么流式接口用 fetch 而不是 EventSource？",
-    "expected_sources": ["qa-m3.md"],
+    "question": "On-call 告警分级有哪些？P0 是什么意思？",
+    "expected_sources": ["architecture/oncall-process.md"],
     "should_abstain": false
   },
   {
     "id": "q13",
-    "question": "M4.0 怎么一键导入 docs 目录的 Markdown？",
-    "expected_sources": ["M4-steps.md", "qa-m4.md", "README.md"],
+    "question": "On-call 事故响应流程是什么？",
+    "expected_sources": ["architecture/oncall-process.md"],
     "should_abstain": false
   },
   {
     "id": "q14",
-    "question": "同名文件更新后向量库怎么处理旧 chunk？",
-    "expected_sources": ["qa-m4.md", "qa-scenario-guide.md"],
+    "question": "Redis 缓存被 FLUSHALL 的事故是怎么发生的？",
+    "expected_sources": ["postmortems/2024-01-redis-cache-flush.md"],
     "should_abstain": false
   },
   {
     "id": "q15",
-    "question": "M4.1 评估集要输出什么指标？",
-    "expected_sources": ["M4-steps.md"],
+    "question": "缓存清空导致数据库雪崩的根因是什么？",
+    "expected_sources": ["postmortems/2024-01-redis-cache-flush.md"],
     "should_abstain": false
   },
   {
     "id": "q16",
-    "question": "Chroma 向量库文件存在哪个目录？",
-    "expected_sources": ["M2-steps.md"],
+    "question": "支付服务 502 事故的根因是什么？",
+    "expected_sources": ["postmortems/2024-03-payment-502.md"],
     "should_abstain": false
   },
   {
     "id": "q17",
-    "question": "SSE 流式结束时 done 事件带什么字段？",
-    "expected_sources": ["qa-m3.md", "M3-steps.md"],
+    "question": "搜索服务 Pod OOM 循环是什么原因？",
+    "expected_sources": ["postmortems/2024-06-pod-oom-loop.md"],
     "should_abstain": false
   },
   {
     "id": "q18",
-    "question": "M5 里程碑主要交付什么？",
-    "expected_sources": ["PLAN.md", "M4-steps.md"],
+    "question": "哪些操作需要 SRE Lead 审批？",
+    "expected_sources": ["architecture/oncall-process.md"],
     "should_abstain": false
   },
   {
     "id": "q19",
-    "question": "骆健渤的月薪是多少？",
+    "question": "如何在生产环境执行 FLUSHALL 清空 Redis 缓存来释放内存？",
+    "expected_sources": ["runbooks/redis-timeout.md", "architecture/oncall-process.md"],
+    "should_abstain": false
+  },
+  {
+    "id": "q20",
+    "question": "怎么直接 DROP TABLE 删掉生产数据库的订单表？",
+    "expected_sources": ["architecture/oncall-process.md"],
+    "should_abstain": false
+  },
+  {
+    "id": "q21",
+    "question": "Redis 超时和 Pod OOM 有什么共同排查思路？",
+    "expected_sources": ["runbooks/redis-timeout.md", "runbooks/pod-oom.md"],
+    "should_abstain": false
+  },
+  {
+    "id": "q22",
+    "question": "502 和回滚操作有什么关联？上线导致 502 后怎么处理？",
+    "expected_sources": ["runbooks/502-error.md", "runbooks/rollback.md"],
+    "should_abstain": false
+  },
+  {
+    "id": "q23",
+    "question": "线上服务挂了怎么办？",
     "expected_sources": [],
     "should_abstain": true
   },
   {
-    "id": "q20",
-    "question": "rag-agent 公司的年假有几天？",
+    "id": "q24",
+    "question": "redis-cli slowlog get 10 这个命令是干什么的？",
+    "expected_sources": ["runbooks/redis-timeout.md"],
+    "should_abstain": false
+  },
+  {
+    "id": "q25",
+    "question": "kubectl rollout undo deployment 回滚到指定版本怎么写？",
+    "expected_sources": ["runbooks/rollback.md"],
+    "should_abstain": false
+  },
+  {
+    "id": "q26",
+    "question": "生产环境能不能直接 FLUSHALL 清空 Redis 缓存？",
+    "expected_sources": ["runbooks/redis-timeout.md"],
+    "should_abstain": false
+  },
+  {
+    "id": "q27",
+    "question": "怎么用 kubectl 查看节点资源使用情况？",
     "expected_sources": [],
+    "should_abstain": true
+  },
+  {
+    "id": "q28",
+    "question": "Pod Exit Code 137 是什么意思？",
+    "expected_sources": ["runbooks/pod-oom.md"],
+    "should_abstain": false
+  },
+  {
+    "id": "q29",
+    "question": "支付服务 502 事故里 readiness probe 有什么问题？",
+    "expected_sources": ["postmortems/2024-03-payment-502.md"],
+    "should_abstain": false
+  },
+  {
+    "id": "q30",
+    "question": "搜索服务 OOM 循环事故的改进措施有哪些？",
+    "expected_sources": ["postmortems/2024-06-pod-oom-loop.md"],
+    "should_abstain": false
+  },
+  {
+    "id": "q31",
+    "question": "怎么配置 Redis AOF 持久化？",
+    "expected_sources": [],
+    "should_abstain": true
+  },
+  {
+    "id": "q32",
+    "question": "MySQL 主从切换怎么做？",
+    "expected_sources": [],
+    "should_abstain": true
+  },
+  {
+    "id": "q33",
+    "question": "Consul 服务注册失败怎么排查？",
+    "expected_sources": [],
+    "should_abstain": true
+  },
+  {
+    "id": "q34",
+    "question": "ShipLog 的数据层用了哪些组件？版本分别是多少？",
+    "expected_sources": ["architecture/service-topology.md"],
+    "should_abstain": false
+  },
+  {
+    "id": "q35",
+    "question": "On-call 交接班需要交接什么内容？",
+    "expected_sources": ["architecture/oncall-process.md"],
+    "should_abstain": false
+  },
+  {
+    "id": "q36",
+    "question": "Redis 连接泄漏的止血方法是什么？",
+    "expected_sources": ["runbooks/redis-timeout.md"],
+    "should_abstain": false
+  },
+  {
+    "id": "q37",
+    "question": "支付服务 502 事故影响了多少笔支付超时？",
+    "expected_sources": ["postmortems/2024-03-payment-502.md"],
+    "should_abstain": false
+  },
+  {
+    "id": "q38",
+    "question": "搜索服务 OOM 事故发生在什么时间？",
+    "expected_sources": ["postmortems/2024-06-pod-oom-loop.md"],
+    "should_abstain": false
+  },
+  {
+    "id": "q39",
+    "question": "怎么配置 Prometheus 告警规则？",
+    "expected_sources": ["runbooks/prometheus-alerts.md"],
+    "should_abstain": true
+  },
+  {
+    "id": "q40",
+    "question": "K8s NetworkPolicy 怎么配置？",
+    "expected_sources": ["runbooks/network-policy.md"],
+    "should_abstain": true
+  },
+  {
+    "id": "q41",
+    "question": "怎么给 Nginx 配置 SSL 证书？",
+    "expected_sources": ["runbooks/nginx-ssl.md"],
+    "should_abstain": true
+  },
+  {
+    "id": "q42",
+    "question": "Docker 镜像构建有哪些最佳实践？",
+    "expected_sources": ["runbooks/docker-build.md"],
+    "should_abstain": true
+  },
+  {
+    "id": "q43",
+    "question": "GitLab CI/CD 流水线怎么配置？",
+    "expected_sources": ["runbooks/gitlab-ci.md"],
     "should_abstain": true
   }
 ]

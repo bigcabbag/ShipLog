@@ -24,7 +24,7 @@
 ### 3. 同名 Markdown 更新后向量库怎么处理？
 
 - `store.py` 的 `index_chunks`：按 `metadata.source`（文件名）**先删旧向量再写入**
-- 改 `M3-steps.md` 后重跑 `import_docs.py` 或重新上传 → 覆盖，不会双份
+- 改 `steps/M3-steps.md` 后重跑 `import_docs.py` 或重新上传 → 覆盖，不会双份
 - **更好方案**：CI 钩子文档变更自动 re-index；生产 blue-green 索引
 
 ### M4.0 自检
@@ -73,7 +73,7 @@
 **A：**
 1. **现象**：外部 PDF 像 Demo 数据，缺业务叙事。
 2. **答法**：DevKit 索引**本仓库真实文档**；`import_docs.py` 导入 PLAN/Mx-steps/qa。
-3. **验收**：问「M3 分几步」「CORS 怎么验收」→ sources 指向 `M3-steps.md` / `qa-m3.md`。
+3. **验收**：问「M3 分几步」「CORS 怎么验收」→ sources 指向 `steps/M3-steps.md` / `qa/qa-m3.md`。
 4. **更好方案**：M4.1 加 eval 集量化 Recall@3。
 5. **本项目**：M4.0 验收标准；`ChatPanel` 示例问题已换 DevKit 题。
 
@@ -84,7 +84,7 @@
 ### 1. Recall@3 是什么？
 
 - 对每道题跑 **retrieve Top-3**（不调 LLM）
-- 看期望来源文件（如 `M3-steps.md`）是否出现在 Top-3 任一 chunk 的 `metadata.source`
+- 看期望来源文件（如 `steps/M3-steps.md`）是否出现在 Top-3 任一 chunk 的 `metadata.source`
 - **Recall@3** = 命中题数 / 有标答题数（`should_abstain=false`）
 
 ### 2. 为什么 M4.1 只评检索，不评生成？
