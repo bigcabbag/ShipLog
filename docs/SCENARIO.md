@@ -45,7 +45,7 @@
 | On-call 工程师 | 「上周类似 OOM 怎么修的？」 | 引用 Postmortem +（M6）查 incident 表 |
 | 面试官 | 「召回率多少？」 | ShipLog eval 20 题 **Recall@3** 数字 |
 | 面试官 | 「能不能 FLUSHALL？」 | CRAG + prompt **拒答/只读 Runbook 禁止项** |
-| 演示观众 | 上传厂商 PDF / 贴告警截图 | M5.4 补充路径，主库仍用 Markdown kb |
+| 演示观众 | 上传厂商 PDF / 贴告警截图 | M5.3 补充路径，主库仍用 Markdown kb |
 
 ---
 
@@ -55,7 +55,7 @@
 flowchart TD
   A[主库: docs/kb Markdown] -->|import_docs.py| V[向量库 + BM25]
   B[补充: PDF 上传] -->|热更新| V
-  C[补充: 截图 M5.4] -->|DeepSeek V4 读图→文本 query| V
+  C[补充: 截图 M5.3] -->|DeepSeek V4 读图→文本 query| V
   V --> R[混合检索 RRF]
   R --> G[CRAG → 生成 + sources]
 ```
@@ -63,9 +63,9 @@ flowchart TD
 | 路径 | 角色 | 是否必须 |
 |------|------|----------|
 | `docs/kb/**/*.md` | 主知识库，eval 依据 | ✅ M5.2 |
-| PDF 上传 | 模拟临时厂商手册 | M5.4 |
-| 联网搜索 | 外部实时状态 | M6 可选 tool |
-| 用户截图 | 告警图 → **DeepSeek V4 思路 A** → 文本 RAG | M5.4 |
+| PDF 上传 | 模拟临时厂商手册 | M5.3 |
+| 联网搜索 | 外部实时状态 | M6.0 可选 tool |
+| 用户截图 | 告警图 → DeepSeek V4 思路 A → 文本 RAG | M5.3 |
 
 ### 目录规划（M5.2 创建）
 
@@ -90,7 +90,7 @@ docs/kb/
 | eval Recall@3 | M4.1 ✅ | M5.2 换 ShipLog 题重跑 |
 | trace_id 回放 | M4.4 ✅ | Bad case 复盘 |
 | Docker + pgvector | M5.0～M5.1 | 生产叙事 |
-| PDF 热更新 + 截图提问（思路 A） | M5.4 | 热更新 + DeepSeek 读图→文本检索 |
+| PDF 热更新 + 截图提问（思路 A） | M5.3 | 热更新 + DeepSeek 读图→文本检索 |
 | Tool Calling | M6.0 | Runbook vs incident SQL |
 | Multi-Agent | M6.1 | 多路排查汇总 |
 
@@ -119,7 +119,7 @@ PDF/截图 demo 题：**手测**，不进主 eval 20 题。
 
 ---
 
-## 7. 简历一句话（M5.3 定稿）
+## 7. 简历一句话（M6.3 定稿）
 
 > **ShipLog** 研发 On-call 助手：LangGraph Agentic RAG 索引模拟 Runbook/Postmortem；BM25+向量混合检索；CRAG 低置信拒答防误操作；自建 20 题 eval Recall@3 XX%；pgvector + trace 可复盘；FastAPI + React + Docker。核心链路自研，参考 Dify/Onyx 场景。
 
@@ -129,14 +129,14 @@ PDF/截图 demo 题：**手测**，不进主 eval 20 题。
 
 | 子步 | ShipLog 相关交付 |
 |------|------------------|
-| M5.1 | PG 向量 + trace（场景无关） |
-| **M5.2** | **kb 内容 + import + prompt + eval + UI** |
-| M5.3 | README + PITCH |
-| M5.4 | **PDF 热更新 + 截图提问**（`vision.py` · 思路 A） |
-| M5.5 | 场景面试 20 题 |
+| M5.1 | PG 向量 + trace |
+| **M5.2** | **kb + import + prompt + eval + UI** |
+| **M5.3** | **PDF 热更新 + 截图**（`vision.py` · 思路 A） |
 | M6.0 | search_runbook + query_incident |
 | M6.1 | Multi-Agent + 安全分支 |
 | M6.2 | On-call 多轮记忆 |
+| M6.3 | README + PITCH |
+| M6.4 | 场景面试 20 题 |
 
 详见 [M5-steps.md](./steps/M5-steps.md) · [M6-steps.md](./steps/M6-steps.md)
 

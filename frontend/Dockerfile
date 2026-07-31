@@ -8,8 +8,8 @@ RUN npm ci
 
 COPY . .
 
-# 浏览器在宿主机访问 API，须用 localhost:8032（非 docker 内网服务名）
-ARG VITE_API_BASE_URL=http://localhost:8032
+# 空 = 同源相对路径，由本容器 nginx 反代 /chat 等到 backend
+ARG VITE_API_BASE_URL=
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
 RUN npm run build

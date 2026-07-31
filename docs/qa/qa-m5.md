@@ -21,10 +21,10 @@
 
 **A：**
 1. **现象**：浏览器 localhost:5173 打开，请求 API 失败。
-2. **根因**：前端 `VITE_API_BASE_URL` 构建时写死；若写成 `http://backend:8000`，浏览器解析不了 docker 内网名；或 CORS 未含前端 origin。
-3. **排查**：Network 看请求 URL 是 localhost:8032 还是 backend；后端 CORS 是否含 `http://localhost:5173`。
-4. **方案**：Docker 前端 ARG 用 `http://localhost:8032`（宿主机端口映射）；CORS 与 dev 一致。
-5. **本项目**：`frontend/Dockerfile` build-arg + `main.py` CORSMiddleware 已配 5173。后端映射 8032→8000（Windows Hyper-V 保留 8000 端口范围）。
+2. **根因**：前端 `VITE_API_BASE_URL` 构建时写死 docker 内网名 `http://backend:8000` 浏览器解析不了；或跨域直连 8032 但 CORS 未配。
+3. **排查**：Network 看请求 URL 是 `5173/chat`（同源反代）还是 `8032`/`backend`；502 时查 `docker compose logs frontend` nginx 能否解析 backend。
+4. **方案**：`VITE_API_BASE_URL` 留空，frontend 容器 nginx `proxy_pass http://backend:8000`；8032 仅 curl 调试；CORS 保留作 fallback。
+5. **本项目**：`frontend/nginx.conf` 反代 + `Dockerfile` 空 ARG；`main.py` CORSMiddleware 仍配 5173（直连调试）。8032→8000 映射保留。
 
 ---
 
@@ -177,5 +177,29 @@
 3. **排查**：逐条检查发现，幻觉回答里的编造命令多为"合理但文档没有的"——LLM 基于领域知识补全了文档缺失的细节。
 4. **方案**：这是 prompt 设计的 trade-off——"详细"和"保守"不可兼得。CRAG 通过 grade 过滤不相关文档，把幻觉率从 17.2% 降到 11.5%，接近通用 prompt 水平。进一步优化：prompt 加"只引用文档中出现的命令，不要补充"约束。
 5. **本项目**：这个发现本身是面试亮点——展示了量化评估如何揭示 prompt 设计的隐藏代价，以及 CRAG 如何部分缓解这个问题。
+
+---
+
+## 场景题 · M5.3 On-call 输入亮点（PDF + 截图）
+
+**Q11：** 用户只贴一张告警截图、不打字，你怎么处理？为什么不做 CLIP 图文向量库？
+
+**A：**
+1. **现象**：On-call 群里只甩 Grafana/Prometheus 截图，没有文字描述。
+2. **根因**：截图像素无法直接进 bge 文本向量库；端到端 CLIP 多模态 RAG 要换 embedding、改索引，scope 大。
+3. **排查**：`vision_extract` trace 是否输出告警名/服务名；`retrieval_query` 是否用于 retrieve；最终 `sources` 是否命中 Runbook。
+4. **方案（思路 A）**：DeepSeek 多模态读图 → 提取「Redis timeout prod」等文本 → 原有 RRF+CRAG 检索 → 纯文本生成。图片**不进** pgvector。
+5. **本项目**：`app/rag/vision.py` + `ChatRequest.image_base64`；trace 第一步 `vision_extract`；手测见 `docs/kb/demo/demo-screenshot.md`。
+
+---
+
+**Q12：** PDF 热更新和截图提问有什么区别？上传简历 PDF 问简历内容会拒答吗？
+
+**A：**
+1. **现象**：用户混淆「上传 PDF」和「贴截图」两种输入。
+2. **根因**：PDF 走 `POST /upload` **写入向量库**；截图只生成临时 query，**不入库**。
+3. **排查**：问简历问题看 `sources` 是否含 `.pdf`；贴简历截图多半检索不到 Runbook → CRAG 拒答。
+4. **方案**：PDF 热更新 = 运行时扩大 kb；截图 = 输入侧多模态。禁止非 Runbook PDF 需加 source 白名单（当前未做）。
+5. **本项目**：M5.3 验收 PDF 的 `sources` 出现 `.pdf`；截图命中 `runbooks/*.md`；简历 PDF **会答**——面试如实说。
 
 ---

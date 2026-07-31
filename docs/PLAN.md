@@ -20,23 +20,23 @@
   - [x] M4.2 LangGraph CRAG（对标 agentic-rag-for-dummies）
   - [x] M4.3 BM25+向量 RRF（对标 CliffsCai）
   - [x] M4.4 trace_id 检索日志
-- [ ] **M5** 简历交付 ← **进行中** → [M5-steps.md](./steps/M5-steps.md) · [qa-m5.md](./qa/qa-m5.md) · [qa-scenario-guide.md](./qa/qa-scenario-guide.md)
-  - [x] M5.0 Docker Compose（仍用 Chroma）✅ 后端 8032 + 前端 5173 已验收
-  - [x] M5.1 **pgvector + trace 迁 PostgreSQL** ✅ 188 chunks + trace 回放已验收
-  - [x] M5.2 **ShipLog 场景定稿** ✅ kb 知识库 + prompt 换皮 + Recall@3=86.8% + 生成层量化评估（幻觉率 17.2%→11.5%，43题含不覆盖场景）
-  - [ ] M5.3 README 简历化 + `PITCH.md` 三分钟稿
-  - [ ] M5.4 **On-call 输入亮点**（PDF 热更新 + 截图提问 · DeepSeek V4 思路 A）
-  - [ ] M5.5 场景面试 20 题自测
-- [ ] **M6** Agent 演进（可选，M5 完成后）→ [M6-steps.md](./steps/M6-steps.md)
-  - [ ] M6.0 Tool Calling：`search_runbook` + `query_incident` +（可选）`web_search`
-  - [ ] M6.1 Multi-Agent：Runbook 检索 / 事故分析 /（可选）外部搜索 分工
-  - [ ] M6.2 On-call 会话记忆 + 多步排查规划
+- [ ] **M5** 工程化 + ShipLog 场景 ← **进行中** → [M5-steps.md](./steps/M5-steps.md) · [qa-m5.md](./qa/qa-m5.md)
+  - [x] M5.0 Docker Compose ✅
+  - [x] M5.1 pgvector + trace 迁 PostgreSQL ✅
+  - [x] M5.2 ShipLog 场景定稿 + eval ✅（Recall@3=86.8%、幻觉率 17.2%→11.5%）
+  - [ ] M5.3 **On-call 输入亮点**（PDF 热更新 + 截图）← 代码已完成，待验收
+- [ ] **M6** Agent 演进 + 交付收尾 → [M6-steps.md](./steps/M6-steps.md)
+  - [ ] M6.0 Tool Calling
+  - [ ] M6.1 Multi-Agent 分工 + 安全分支
+  - [ ] M6.2 On-call 会话记忆 + 多步规划
+  - [ ] M6.3 README 简历化 + `PITCH.md`（原 M5.3）
+  - [ ] M6.4 场景面试 20 题自测（原 M5.5）
 
 **项目场景**：**ShipLog — 研发 On-call 故障排查助手**（M5.2 起；M4 阶段为 DevKit 文档助手，见 [SCENARIO.md](./SCENARIO.md)）  
 **面试题规则**：每步出**场景题**（面经驱动），见 [qa-scenario-guide.md](./qa/qa-scenario-guide.md)  
 **秋招面经库**（外部面经收集 + 项目映射 + 升级 backlog）：[interview/README.md](./interview/README.md)
 
-**有空时说**：「继续 M5.1」（按 [M5-steps.md](./steps/M5-steps.md) 一步一步来）
+**下一步**：说 **「继续 M5.3」** 验收 PDF + 截图；通过后 **「继续 M6.0」**
 
 ## 协作方式：PR 流程（从 M3 起）
 
@@ -333,7 +333,8 @@ flowchart LR
 | **M2 基础 RAG** | PDF 上传 → 切块 → 检索 → 问答 | 2～3 次 session | M2.3 完成，待验收 |
 | **M3 全栈** | React 前端 + SSE 流式 | 2 次 session | 未开始 |
 | **M4 进阶** | LangGraph 评分 或 混合检索（二选一） | 1～2 次 session | 未开始 |
-| **M5 简历交付** | Docker → pgvector+trace → **ShipLog 场景** → README → 面试（见 [M5-steps.md](./steps/M5-steps.md)） | 2～4 次 session | M5.0 已完成，M5.1 待做 |
+| **M5 工程化 + 场景** | Docker → pgvector → ShipLog → **PDF/截图** | 2～4 次 session | M5.3 待做 |
+| **M6 Agent + 交付** | Tool Calling → Multi-Agent → 记忆 → README → 面试 | 3～5 次 session | M6.0 待做 |
 
 **整体周期**：实习期 2～3 个月都合理；有空就多推进，忙就停在一 milestone 不往下走。
 

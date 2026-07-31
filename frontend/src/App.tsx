@@ -56,7 +56,9 @@ function App() {
           {loadState === "error" && (
             <span className="status error-inline">❌ {error}</span>
           )}
-          <code className="status-row__api">{API_BASE_URL}</code>
+          <code className="status-row__api">
+            {API_BASE_URL || "同源反代 (/health …)"}
+          </code>
         </div>
         {loadState === "error" && (
           <p className="hint">请先运行：.\scripts\dev.ps1</p>

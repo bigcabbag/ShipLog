@@ -11,6 +11,8 @@ export type ChatRequestBody = {
   use_rag?: boolean;
   top_k?: number;
   system_prompt?: string | null;
+  image_base64?: string | null;
+  image_media_type?: string;
 };
 
 export type ChatResponseBody = {
@@ -18,6 +20,7 @@ export type ChatResponseBody = {
   model: string;
   sources: SourceChunk[] | null;
   trace_id?: string | null;
+  extracted_query?: string | null;
 };
 
 export async function postChat(body: ChatRequestBody): Promise<ChatResponseBody> {

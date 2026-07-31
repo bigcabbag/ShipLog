@@ -37,6 +37,7 @@ def _sse_event(payload: dict) -> str:
 
 app = FastAPI(title="RAG Agent", version="0.1.0")
 
+# Docker 经 frontend nginx 同源反代时可不依赖 CORS；保留供直连 8032 / 本地调试
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -142,10 +143,12 @@ async def chat_endpoint(body: ChatRequest):
     try:
         settings = get_settings()
         if body.use_rag:
-            reply, raw_sources, trace_id = await rag_chat(
+            reply, raw_sources, trace_id, extracted = await rag_chat(
                 body.message,
                 top_k=body.top_k,
                 system_prompt=body.system_prompt,
+                image_base64=body.image_base64,
+                image_media_type=body.image_media_type,
             )
             sources = [SourceChunk(**item) for item in raw_sources] or None
             return ChatResponse(
@@ -153,13 +156,24 @@ async def chat_endpoint(body: ChatRequest):
                 model=settings["model"],
                 sources=sources,
                 trace_id=trace_id,
+                extracted_query=extracted,
             )
 
+        if body.image_base64:
+            raise HTTPException(status_code=400, detail="截图提问需开启 use_rag")
         reply = await chat(body.message, body.system_prompt)
         return ChatResponse(reply=reply, model=settings["model"])
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     except RuntimeError as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
     except Exception as exc:
+        detail = str(exc)
+        if "aliyun" in detail.lower() or "dashscope" in detail.lower():
+            raise HTTPException(
+                status_code=502,
+                detail=f"调用通义读图失败: {exc}",
+            ) from exc
         raise HTTPException(
             status_code=502,
             detail=f"调用 DeepSeek 失败: {exc}",
@@ -177,23 +191,41 @@ async def chat_stream_endpoint(body: ChatRequest):
             sources: list[dict] | None = None
             stream_prompt: str | None = body.system_prompt
             trace_id: str | None = None
+            extracted_query: str | None = None
+
+            stream_user_message = body.message or "请根据截图排查。"
 
             if body.use_rag:
-                rag_prompt, raw_sources, early_reply, trace_id = await prepare_rag_stream_async(
+                (
+                    rag_prompt,
+                    raw_sources,
+                    early_reply,
+                    trace_id,
+                    extracted_query,
+                    stream_user_message,
+                ) = await prepare_rag_stream_async(
                     body.message,
                     top_k=body.top_k,
                     system_prompt=body.system_prompt,
+                    image_base64=body.image_base64,
+                    image_media_type=body.image_media_type,
                 )
                 if early_reply is not None:
                     yield _sse_event({"token": early_reply})
                     yield _sse_event(
-                        {"done": True, "model": model, "sources": [], "trace_id": trace_id},
+                        {
+                            "done": True,
+                            "model": model,
+                            "sources": [],
+                            "trace_id": trace_id,
+                            "extracted_query": extracted_query,
+                        },
                     )
                     return
                 stream_prompt = rag_prompt
                 sources = raw_sources
 
-            async for token in chat_stream(body.message, system_prompt=stream_prompt):
+            async for token in chat_stream(stream_user_message, system_prompt=stream_prompt):
                 yield _sse_event({"token": token})
 
             yield _sse_event(
@@ -202,12 +234,19 @@ async def chat_stream_endpoint(body: ChatRequest):
                     "model": model,
                     "sources": sources,
                     "trace_id": trace_id,
+                    "extracted_query": extracted_query,
                 }
             )
+        except ValueError as exc:
+            yield _sse_event({"error": str(exc)})
         except RuntimeError as exc:
             yield _sse_event({"error": str(exc)})
         except Exception as exc:
-            yield _sse_event({"error": f"调用 DeepSeek 失败: {exc}"})
+            detail = str(exc)
+            if "aliyun" in detail.lower() or "dashscope" in detail.lower():
+                yield _sse_event({"error": f"调用通义读图失败: {exc}"})
+            else:
+                yield _sse_event({"error": f"调用 DeepSeek 失败: {exc}"})
 
     return StreamingResponse(
         event_generator(),

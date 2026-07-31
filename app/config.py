@@ -9,6 +9,7 @@ _ENV_FILE = _PROJECT_ROOT / ".env"
 
 load_dotenv(_ENV_FILE, encoding="utf-8-sig")
 
+
 # 国内默认走 HuggingFace 镜像（可在 .env 里覆盖 HF_ENDPOINT）
 _hf_endpoint = os.getenv("HF_ENDPOINT", "").strip()
 if not _hf_endpoint:
@@ -37,13 +38,40 @@ def get_settings() -> dict[str, str]:
     api_key = os.getenv("DEEPSEEK_API_KEY", "").strip()
     base_url = os.getenv("LLM_BASE_URL", "https://api.deepseek.com/v1").strip()
     model = os.getenv("LLM_MODEL", "deepseek-v4-flash").strip()
+    dashscope_key = os.getenv("DASHSCOPE_API_KEY", "").strip()
+    vision_model = os.getenv("VISION_MODEL", "").strip() or (
+        "qwen3.7-flash" if dashscope_key else model
+    )
+    # 读图走通义 OpenAI 兼容接口（image_url）；Key 可用 VISION_API_KEY 或 DASHSCOPE_API_KEY
+    vision_api_key = (
+        os.getenv("VISION_API_KEY", "").strip() or dashscope_key or api_key
+    ).strip()
+    vision_base_env = os.getenv("VISION_BASE_URL", "").strip()
+    if vision_base_env:
+        vision_base_url = vision_base_env
+    elif dashscope_key or os.getenv("VISION_API_KEY", "").strip():
+        vision_base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    else:
+        vision_base_url = base_url
 
     if not api_key:
         raise RuntimeError("未找到 DEEPSEEK_API_KEY，请检查 .env 文件")
+    if vision_model != model and not dashscope_key and not os.getenv("VISION_API_KEY", "").strip():
+        raise RuntimeError(
+            "已配置 VISION_MODEL 但未设置 DASHSCOPE_API_KEY 或 VISION_API_KEY"
+        )
+    if "dashscope.aliyuncs.com" in vision_base_url and vision_api_key == api_key:
+        raise RuntimeError(
+            "读图需通义 DashScope API Key：请在 .env 设置 DASHSCOPE_API_KEY，"
+            "不能使用 DEEPSEEK_API_KEY（设置后需 docker compose up -d --build backend）"
+        )
 
     return {
         "api_key": api_key,
         "base_url": base_url,
         "model": model,
+        "vision_model": vision_model,
+        "vision_api_key": vision_api_key,
+        "vision_base_url": vision_base_url,
         "embedding_model": get_embedding_model(),
     }

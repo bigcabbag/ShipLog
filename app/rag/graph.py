@@ -244,14 +244,17 @@ async def run_crag_prepare(
     *,
     top_k: int = 3,
     system_prompt: str | None = None,
+    search_query: str | None = None,
+    pre_trace_steps: list[dict] | None = None,
 ) -> tuple[str | None, list[dict], str | None, str]:
     """CRAG 预处理：返回 rag_prompt、sources、early_reply、trace_id。"""
     trace_id = new_trace_id()
     graph = get_crag_graph()
+    query = (search_query or message).strip() or message
     result = await graph.ainvoke(
         {
             "question": message,
-            "search_query": message,
+            "search_query": query,
             "top_k": top_k,
             "trace_id": trace_id,
             "trace_steps": [],
@@ -260,6 +263,7 @@ async def run_crag_prepare(
         }
     )
 
+    steps = list(pre_trace_steps or []) + (result.get("trace_steps") or [])
     save_trace(
         {
             "trace_id": trace_id,
@@ -267,7 +271,7 @@ async def run_crag_prepare(
             "top_k": top_k,
             "route": result.get("route"),
             "rewrite_count": result.get("rewrite_count", 0),
-            "steps": result.get("trace_steps") or [],
+            "steps": steps,
             "abstain_reply": result.get("abstain_reply"),
         }
     )
