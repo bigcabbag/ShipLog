@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { postChat, type SourceChunk } from "../api/chat";
 import { postChatStream } from "../api/chatStream";
 import {
@@ -32,6 +32,7 @@ type ChatPanelProps = {
 
 function ChatPanel({ disabled = false }: ChatPanelProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [pendingImage, setPendingImage] = useState<PendingImage | null>(null);
@@ -39,6 +40,10 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
   const [streamOn, setStreamOn] = useState(true);
   const [loading, setLoading] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, loading]);
 
   function patchMessage(id: string, patch: Partial<ChatMessage>) {
     setMessages((prev) =>
@@ -193,9 +198,9 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
   const canSend = !loading && !disabled && (input.trim().length > 0 || pendingImage !== null);
 
   return (
-    <section className="chat-panel card">
+    <section className={`chat-panel card${disabled ? " chat-panel--disabled" : ""}`}>
       <div className="chat-panel__head">
-        <h2>ShipLog On-call 助手</h2>
+        <h2>对话</h2>
         <div className="chat-panel__toggles">
           <label className="chat-panel__rag-toggle">
             <input
@@ -204,7 +209,7 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
               onChange={(e) => setUseRag(e.target.checked)}
               disabled={loading || disabled}
             />
-            基于知识库（use_rag）
+            知识库检索
           </label>
           <label className="chat-panel__rag-toggle">
             <input
@@ -218,6 +223,15 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
         </div>
       </div>
 
+      {disabled ? (
+        <div className="chat-panel__gate">
+          <strong>等待后端连接</strong>
+          对话区会在服务就绪后启用。
+          <br />
+          请先运行 <code>docker compose up -d</code>
+        </div>
+      ) : (
+        <>
       <div className="chat-panel__examples">
         <span className="chat-panel__examples-label">试试：</span>
         {EXAMPLE_QUESTIONS.map((q) => (
@@ -237,7 +251,7 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
         {messages.length === 0 && (
           <p className="chat-panel__empty">
             输入问题开始排查。可粘贴告警截图（Ctrl+V）。先运行{" "}
-            <code>uv run python scripts/import_docs.py</code> 导入 Runbook，或左侧上传 PDF。
+            <code>uv run python scripts/import_docs.py</code> 导入 Runbook，或右侧上传 PDF。
           </p>
         )}
         {messages.map((msg) => (
@@ -254,7 +268,21 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
               />
             )}
             <p className="chat-bubble__content">
-              {msg.content || (loading && msg.role === "assistant" ? "…" : "")}
+              {msg.content}
+              {loading &&
+                msg.role === "assistant" &&
+                !msg.error &&
+                msg.content &&
+                messages[messages.length - 1]?.id === msg.id && (
+                  <span className="chat-panel__stream-cursor" aria-hidden="true" />
+                )}
+              {!msg.content && loading && msg.role === "assistant" && (
+                <span className="chat-panel__typing" aria-hidden="true">
+                  <span className="chat-panel__typing-dot" />
+                  <span className="chat-panel__typing-dot" />
+                  <span className="chat-panel__typing-dot" />
+                </span>
+              )}
             </p>
             {msg.extractedQuery && !msg.error && (
               <p className="chat-bubble__meta">
@@ -286,11 +314,27 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
             )}
           </article>
         ))}
-        {loading && (
+        {loading && streamOn && messages[messages.length - 1]?.role !== "assistant" && (
           <p className="chat-panel__loading">
-            {streamOn ? "AI 正在生成…" : "AI 正在思考…"}
+            <span className="chat-panel__typing" aria-hidden="true">
+              <span className="chat-panel__typing-dot" />
+              <span className="chat-panel__typing-dot" />
+              <span className="chat-panel__typing-dot" />
+            </span>
+            检索与生成中
           </p>
         )}
+        {loading && !streamOn && (
+          <p className="chat-panel__loading">
+            <span className="chat-panel__typing" aria-hidden="true">
+              <span className="chat-panel__typing-dot" />
+              <span className="chat-panel__typing-dot" />
+              <span className="chat-panel__typing-dot" />
+            </span>
+            AI 正在思考
+          </p>
+        )}
+        <div ref={messagesEndRef} />
       </div>
 
       {pendingImage && (
@@ -346,10 +390,12 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
             贴图
           </button>
           <button type="submit" className="chat-panel__send" disabled={!canSend}>
-            {loading ? "发送中…" : "发送"}
+            {loading ? "发送中" : "发送"}
           </button>
         </div>
       </form>
+        </>
+      )}
     </section>
   );
 }

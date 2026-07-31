@@ -37,43 +37,59 @@ function App() {
   const backendReady = loadState === "ok";
 
   return (
-    <main className="page">
-      <header className="header">
-        <p className="eyebrow">ShipLog · On-call 故障排查 RAG</p>
-        <h1>研发 On-call 排查助手</h1>
-        <p className="subtitle">
-          索引 Runbook、事故复盘、架构文档 → 混合检索 + CRAG 拒答 + 流式问答（ShipLog 场景）
-        </p>
-      </header>
-
-      <section className="card card--compact">
-        <div className="status-row">
-          <span className="status-row__label">后端</span>
-          {loadState === "loading" && <span className="status loading">检测中…</span>}
-          {loadState === "ok" && health && (
-            <span className="status ok-inline">✅ {health.message}</span>
-          )}
-          {loadState === "error" && (
-            <span className="status error-inline">❌ {error}</span>
-          )}
-          <code className="status-row__api">
-            {API_BASE_URL || "同源反代 (/health …)"}
-          </code>
-        </div>
-        {loadState === "error" && (
-          <p className="hint">请先运行：.\scripts\dev.ps1</p>
-        )}
-      </section>
-
-      <div className="layout">
-        <aside className="layout__sidebar">
-          <UploadPanel disabled={!backendReady} />
-        </aside>
-        <div className="layout__main">
-          <ChatPanel disabled={!backendReady} />
-        </div>
+    <div className="app-shell">
+      <div className="app-shell__ambient" aria-hidden="true">
+        <div className="app-shell__orb app-shell__orb--signal" />
+        <div className="app-shell__orb app-shell__orb--live" />
+        <div className="app-shell__grain" />
       </div>
-    </main>
+
+      <main className="page">
+        <header className="header">
+          <div className="header__top">
+            <div className="header__brand">
+              <div className="header__mark" aria-hidden="true" />
+              <div>
+                <p className="eyebrow">ShipLog · On-call</p>
+                <h1>故障排查助手</h1>
+              </div>
+            </div>
+            <div className="header__meta">
+              <span
+                className={`status-pill status-pill--${loadState}`}
+                title={API_BASE_URL || "同源反代"}
+              >
+                <span className="status-pill__dot" />
+                {loadState === "loading" && "连接中"}
+                {loadState === "ok" && (health?.message ?? "服务在线")}
+                {loadState === "error" && (error ?? "后端离线")}
+              </span>
+            </div>
+          </div>
+          <p className="subtitle">
+            Runbook · 混合检索 · CRAG · 截图读图 —{" "}
+            <span className="header__api-hint">
+              {API_BASE_URL || "API 同源反代"}
+            </span>
+          </p>
+          {loadState === "error" && (
+            <p className="hint">
+              启动后端：<code>docker compose up -d</code> 或{" "}
+              <code>.\scripts\dev.ps1</code>
+            </p>
+          )}
+        </header>
+
+        <div className="workspace">
+          <div className="workspace__main">
+            <ChatPanel disabled={!backendReady} />
+          </div>
+          <aside className="workspace__side">
+            <UploadPanel disabled={!backendReady} />
+          </aside>
+        </div>
+      </main>
+    </div>
   );
 }
 

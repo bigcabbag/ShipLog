@@ -111,7 +111,7 @@ function UploadPanel({ disabled = false }: UploadPanelProps) {
 
       {lastUpload && (
         <div className="upload-panel__result">
-          <p className="upload-panel__result-title">✅ {lastUpload.filename}</p>
+          <p className="upload-panel__result-title">{lastUpload.filename}</p>
           <ul>
             <li>切块：{lastUpload.chunk_count}（size {lastUpload.chunk_size}，overlap {lastUpload.chunk_overlap}）</li>
             <li>本次写入向量：{lastUpload.indexed_chunks}</li>
