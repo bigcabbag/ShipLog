@@ -7,5 +7,12 @@
   "terminal.integrated.env.windows": {
     "Path": "${env:USERPROFILE}\\.local\\bin;${env:Path}"
   },
-  "cursorpyright.analysis.diagnosticMode": "workspace"
+  "cursorpyright.analysis.diagnosticMode": "workspace",
+  "typescript.tsdk": "frontend/node_modules/typescript/lib",
+  "json.schemas": [
+    {
+      "fileMatch": ["frontend/tsconfig.json", "frontend/tsconfig.*.json"],
+      "url": "https://json.schemastore.org/tsconfig"
+    }
+  ]
 }

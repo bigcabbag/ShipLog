@@ -1,6 +1,39 @@
 # CodeGraph 速查（本仓库）
 
-> 索引：`codegraph init` 已完成（25 files, 252 nodes）。改代码后：`codegraph sync`
+> 索引：`codegraph init` 已完成。改代码后：`codegraph sync`
+
+## MCP「死掉」了？按顺序试
+
+1. **Cursor 里重载 MCP**  
+   Settings → MCP → `user-codegraph` → Restart（或 Reload Window）
+
+2. **CLI 自检（项目根目录）**
+   ```powershell
+   cd E:\01_Dev\langChain
+   codegraph status    # 应显示 Files/Nodes 且 [OK] Index is up to date
+   codegraph sync      # 改过很多文件时手动同步
+   ```
+
+3. **Stale lock（索引卡住）**
+   ```powershell
+   codegraph unlock
+   codegraph sync
+   ```
+
+4. **Daemon 空闲退出（常见根因）**  
+   `.codegraph/daemon.log` 里可见 `Shutting down (idle timeout; clients=0)`。  
+   MCP 会在下次查询时自动拉起 daemon；若 Cursor 仍无响应 → 做步骤 1。
+
+5. **版本提示**  
+   log 可能出现 `v1.5.0 is available (running v1.4.1)`。CLI 当前 `codegraph --version` 与 MCP daemon 版本号体系不同，**不影响日常使用**；若要更新，到 [CodeGraph 官网/安装器](https://codegraph.dev) 重装 `C:\Users\lenovo\AppData\Local\codegraph\current`。
+
+6. **终端 CLI 仍可用**  
+   即使 MCP 暂时不可用，项目根可手动：
+   ```powershell
+   codegraph query "run_crag_prepare"
+   codegraph callers run_crag_prepare
+   codegraph impact run_crag_prepare
+   ```
 
 ## 改 X 时先看谁调谁
 
