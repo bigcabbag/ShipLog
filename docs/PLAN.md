@@ -20,13 +20,13 @@
   - [x] M4.2 LangGraph CRAG（对标 agentic-rag-for-dummies）
   - [x] M4.3 BM25+向量 RRF（对标 CliffsCai）
   - [x] M4.4 trace_id 检索日志
-- [x] **M5** 工程化 + ShipLog 场景 ← **进行中** → [M5-steps.md](./steps/M5-steps.md) · [qa-m5.md](./qa/qa-m5.md)
+- [x] **M5** 工程化 + ShipLog 场景 → [M5-steps.md](./steps/M5-steps.md) · [qa-m5.md](./qa/qa-m5.md) · PR [#3](https://github.com/bigcabbag/rag-agent/pull/3) **已合并**
   - [x] M5.0 Docker Compose ✅
   - [x] M5.1 pgvector + trace 迁 PostgreSQL ✅
   - [x] M5.2 ShipLog 场景定稿 + eval ✅（Recall@3=86.8%、幻觉率 17.2%→11.5%）
-  - [x] M5.3 **On-call 输入亮点**（PDF 热更新 + 截图）← 代码已完成，待验收
-- [ ] **M6** Agent 演进 + 交付收尾 → [M6-steps.md](./steps/M6-steps.md)
-  - [ ] M6.0 Tool Calling
+  - [x] M5.3 **On-call 输入亮点**（PDF 热更新 + 截图）✅
+- [ ] **M6** Agent 演进 + 交付收尾 ← **进行中** → [M6-steps.md](./steps/M6-steps.md) · [qa-m6.md](./qa/qa-m6.md)
+  - [ ] M6.0 Tool Calling ← **代码完成，待验收**
   - [ ] M6.1 Multi-Agent 分工 + 安全分支
   - [ ] M6.2 On-call 会话记忆 + 多步规划
   - [ ] M6.3 README 简历化 + `PITCH.md`（原 M5.3）
@@ -36,7 +36,7 @@
 **面试题规则**：每步出**场景题**（面经驱动），见 [qa-scenario-guide.md](./qa/qa-scenario-guide.md)  
 **秋招面经库**（外部面经收集 + 项目映射 + 升级 backlog）：[interview/README.md](./interview/README.md)
 
-**下一步**：说 **「继续 M5.3」** 验收 PDF + 截图；通过后 **「继续 M6.0」**
+**下一步**：验收 **M6.0**（三 tool + trace 回放）→ 说 **「继续 M6.1」**
 
 ## 协作方式：PR 流程（从 M3 起）
 

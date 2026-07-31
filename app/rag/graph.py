@@ -239,6 +239,29 @@ def get_crag_graph():
     return builder.compile()
 
 
+async def run_crag_invoke(
+    message: str,
+    *,
+    top_k: int = 3,
+    system_prompt: str | None = None,
+    search_query: str | None = None,
+) -> dict:
+    """执行 CRAG 图，返回完整 state（不写入 trace）。"""
+    graph = get_crag_graph()
+    query = (search_query or message).strip() or message
+    return await graph.ainvoke(
+        {
+            "question": message,
+            "search_query": query,
+            "top_k": top_k,
+            "trace_id": new_trace_id(),
+            "trace_steps": [],
+            "system_prompt": system_prompt,
+            "rewrite_count": 0,
+        }
+    )
+
+
 async def run_crag_prepare(
     message: str,
     *,
@@ -246,35 +269,30 @@ async def run_crag_prepare(
     system_prompt: str | None = None,
     search_query: str | None = None,
     pre_trace_steps: list[dict] | None = None,
+    persist_trace: bool = True,
 ) -> tuple[str | None, list[dict], str | None, str]:
     """CRAG 预处理：返回 rag_prompt、sources、early_reply、trace_id。"""
     trace_id = new_trace_id()
-    graph = get_crag_graph()
-    query = (search_query or message).strip() or message
-    result = await graph.ainvoke(
-        {
-            "question": message,
-            "search_query": query,
-            "top_k": top_k,
-            "trace_id": trace_id,
-            "trace_steps": [],
-            "system_prompt": system_prompt,
-            "rewrite_count": 0,
-        }
+    result = await run_crag_invoke(
+        message,
+        top_k=top_k,
+        system_prompt=system_prompt,
+        search_query=search_query,
     )
 
     steps = list(pre_trace_steps or []) + (result.get("trace_steps") or [])
-    save_trace(
-        {
-            "trace_id": trace_id,
-            "question": message,
-            "top_k": top_k,
-            "route": result.get("route"),
-            "rewrite_count": result.get("rewrite_count", 0),
-            "steps": steps,
-            "abstain_reply": result.get("abstain_reply"),
-        }
-    )
+    if persist_trace:
+        save_trace(
+            {
+                "trace_id": trace_id,
+                "question": message,
+                "top_k": top_k,
+                "route": result.get("route"),
+                "rewrite_count": result.get("rewrite_count", 0),
+                "steps": steps,
+                "abstain_reply": result.get("abstain_reply"),
+            }
+        )
 
     if result.get("route") == "abstain" or result.get("abstain_reply"):
         return None, [], result.get("abstain_reply", ABSTAIN_NO_RELEVANT), trace_id

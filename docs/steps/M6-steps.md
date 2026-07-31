@@ -4,7 +4,7 @@
 > **目标**：ShipLog On-call **Agent** 能力 + README/PITCH/面试自测。  
 > M4/M5 的 CRAG 仍负责**检索质量**；M6.0～M6.2 负责 **Agent**；M6.3～M6.4 负责 **简历交付**。
 
-**当前进度：未开始（需先完成 M5.3）。M5.3 后说「继续 M6.0」。**
+**当前进度：M6.0 Tool Calling 代码已完成，待验收。分支 `feature/m6-agent`。**
 
 ---
 

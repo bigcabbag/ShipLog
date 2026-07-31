@@ -37,3 +37,10 @@ frontend/.env.local
 docs/codeLearning/
 docs/interview/
 docs/kb/samples/
+
+# 本地工具 / 备份 / Agent 技能锁（不进仓库）
+.agents/
+.codegraph/
+skills-lock.json
+uv.lock.bak
+uv.lock.*.bak
