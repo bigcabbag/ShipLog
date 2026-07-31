@@ -55,7 +55,7 @@ flowchart LR
 
 ### 面试题
 
-完整问答见 [qa-m3.md](./qa-m3.md) → **M3.0 章节**（4 题含答案 + 自检清单）。
+完整问答见 [qa-m3.md](../qa/qa-m3.md) → **M3.0 章节**（4 题含答案 + 自检清单）。
 
 ---
 
@@ -90,7 +90,7 @@ flowchart LR
 
 ### 面试题
 
-完整问答见 [qa-m3.md](./qa-m3.md) → **M3.1 章节**。
+完整问答见 [qa-m3.md](../qa/qa-m3.md) → **M3.1 章节**。
 
 ---
 
@@ -125,7 +125,7 @@ flowchart LR
 
 ### 面试题
 
-完整问答见 [qa-m3.md](./qa-m3.md) → **M3.2 章节**。
+完整问答见 [qa-m3.md](../qa/qa-m3.md) → **M3.2 章节**。
 
 ---
 
@@ -160,7 +160,7 @@ POST /chat/stream → SSE 事件流 → 客户端逐字收到
 
 ### 面试题
 
-完整问答见 [qa-m3.md](./qa-m3.md) → **M3.3 章节**。
+完整问答见 [qa-m3.md](../qa/qa-m3.md) → **M3.3 章节**。
 
 ---
 
@@ -195,7 +195,7 @@ POST /chat/stream → SSE 事件流 → 客户端逐字收到
 
 ### 面试题
 
-完整问答见 [qa-m3.md](./qa-m3.md) → **M3.4 章节**。
+完整问答见 [qa-m3.md](../qa/qa-m3.md) → **M3.4 章节**。
 
 ---
 
@@ -209,7 +209,7 @@ POST /chat/stream → SSE 事件流 → 客户端逐字收到
 |----|------|
 | UI | 简单样式统一（Tailwind 或现有 CSS） |
 | README | 补充前端启动说明 |
-| 问答卡 | 新建/更新 [qa-m3.md](./qa-m3.md)（M3.5 章节总验收） |
+| 问答卡 | 新建/更新 [qa-m3.md](../qa/qa-m3.md)（M3.5 章节总验收） |
 | Git | commit → push → `gh pr create` → review → merge |
 | PLAN | 更新 `docs/PLAN.md` 勾选 M3 完成 |
 
@@ -222,7 +222,7 @@ POST /chat/stream → SSE 事件流 → 客户端逐字收到
 
 ### 面试题
 
-完整问答见 [qa-m3.md](./qa-m3.md) → **M3.5 章节**（总验收 3 题含答案）。
+完整问答见 [qa-m3.md](../qa/qa-m3.md) → **M3.5 章节**（总验收 3 题含答案）。
 
 ---
 

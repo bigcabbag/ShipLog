@@ -28,11 +28,11 @@ GRADE_PROMPT = """你是检索质量评估员。判断文档片段是否能帮�
 
 REWRITE_PROMPT = """用户原问题：{question}
 
-当前检索结果与问题不够相关。请改写为一个更适合在 DevKit 项目文档（PLAN、M3-steps、qa 卡、API 说明）里检索的简短中文问题。
+当前检索结果与问题不够相关。请改写为一个更适合在 ShipLog 知识库（Runbook 排障手册、事故复盘、架构文档）里检索的简短中文问题。
 只输出改写后的问题，不要解释。"""
 
-ABSTAIN_EMPTY_KB = "知识库中暂无相关文档，请先上传 PDF 或运行 import_docs.py。"
-ABSTAIN_NO_RELEVANT = "文档中未找到相关信息，无法回答该问题。"
+ABSTAIN_EMPTY_KB = "知识库中暂无 Runbook 文档，请先运行 import_docs.py 导入知识库。"
+ABSTAIN_NO_RELEVANT = "知识库中未找到相关 Runbook，无法回答该问题。建议查阅官方文档或联系 SRE。"
 
 
 class CragState(TypedDict, total=False):
@@ -244,14 +244,17 @@ async def run_crag_prepare(
     *,
     top_k: int = 3,
     system_prompt: str | None = None,
+    search_query: str | None = None,
+    pre_trace_steps: list[dict] | None = None,
 ) -> tuple[str | None, list[dict], str | None, str]:
     """CRAG 预处理：返回 rag_prompt、sources、early_reply、trace_id。"""
     trace_id = new_trace_id()
     graph = get_crag_graph()
+    query = (search_query or message).strip() or message
     result = await graph.ainvoke(
         {
             "question": message,
-            "search_query": message,
+            "search_query": query,
             "top_k": top_k,
             "trace_id": trace_id,
             "trace_steps": [],
@@ -260,6 +263,7 @@ async def run_crag_prepare(
         }
     )
 
+    steps = list(pre_trace_steps or []) + (result.get("trace_steps") or [])
     save_trace(
         {
             "trace_id": trace_id,
@@ -267,7 +271,7 @@ async def run_crag_prepare(
             "top_k": top_k,
             "route": result.get("route"),
             "rewrite_count": result.get("rewrite_count", 0),
-            "steps": result.get("trace_steps") or [],
+            "steps": steps,
             "abstain_reply": result.get("abstain_reply"),
         }
     )

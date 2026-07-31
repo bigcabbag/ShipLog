@@ -1,0 +1,57 @@
+# M5.1：后端 + 前端 + PostgreSQL(pgvector)
+# PG 凭据从 .env 注入，.env 不上传 GitHub
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-rag}
+      POSTGRES_USER: ${POSTGRES_USER:-rag}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ragpass}
+    ports:
+      - "5433:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-rag} -d ${POSTGRES_DB:-rag}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # 8032 仅 curl/调试；浏览器经 frontend:5173 nginx 反代访问 API
+    ports:
+      - "8032:8000"
+    env_file:
+      - .env
+    environment:
+      HF_ENDPOINT: ${HF_ENDPOINT:-https://hf-mirror.com}
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-rag}:${POSTGRES_PASSWORD:-ragpass}@postgres:5432/${POSTGRES_DB:-rag}
+    volumes:
+      - ./docs:/app/docs:ro
+      - ./data/bm25:/app/data/bm25
+      - ./data/uploads:/app/data/uploads
+      - hf_cache:/root/.cache/huggingface
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ""
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  hf_cache:
+  pg_data:

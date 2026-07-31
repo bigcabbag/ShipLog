@@ -1,19 +1,19 @@
 .upload-panel h2 {
-  margin: 0 0 8px;
-  font-size: 1rem;
+  margin: 0 0 6px;
 }
 
 .upload-panel__hint {
   margin: 0 0 16px;
   font-size: 13px;
-  color: #64748b;
+  color: var(--text-muted);
+  line-height: 1.55;
 }
 
 .upload-panel__stats {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 12px;
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px;
   margin-bottom: 16px;
 }
 
@@ -22,8 +22,8 @@
   justify-content: space-between;
   align-items: center;
   gap: 8px;
-  margin-bottom: 8px;
-  font-size: 14px;
+  margin-bottom: 10px;
+  font-size: 13px;
 }
 
 .upload-panel__stat-row:last-child {
@@ -31,23 +31,30 @@
 }
 
 .upload-panel__stat-label {
-  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
 }
 
 .upload-panel__stat-value {
-  font-size: 1.25rem;
-  color: #2563eb;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--accent);
 }
 
 .upload-panel__stat-code {
-  font-size: 11px;
-  background: #fff;
-  padding: 2px 6px;
-  border-radius: 4px;
-  max-width: 60%;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  background: var(--elevated);
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  max-width: 58%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: var(--text-muted);
 }
 
 .upload-panel__file-input {
@@ -56,78 +63,96 @@
 
 .upload-panel__upload-btn {
   width: 100%;
-  padding: 10px 16px;
-  background: #0f172a;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
+  padding: 12px 16px;
+  background: var(--elevated);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
   font-weight: 600;
+  font-size: 13px;
   cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
 }
 
 .upload-panel__upload-btn:hover:not(:disabled) {
-  background: #1e293b;
+  border-color: rgba(196, 92, 38, 0.4);
+  box-shadow: 0 4px 16px var(--accent-glow);
+  transform: translateY(-1px);
 }
 
 .upload-panel__upload-btn:disabled {
-  opacity: 0.55;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
 .upload-panel__error {
   margin: 10px 0 0;
   font-size: 13px;
-  color: #b91c1c;
+  color: var(--danger);
 }
 
 .upload-panel__result {
   margin-top: 14px;
   padding: 12px;
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  border-radius: 8px;
+  background: var(--sage-soft);
+  border: 1px solid rgba(107, 127, 94, 0.25);
+  border-radius: var(--radius-md);
   font-size: 13px;
+  animation: fade-up 0.35s ease-out;
 }
 
 .upload-panel__result-title {
   margin: 0 0 8px;
   font-weight: 600;
-  color: #15803d;
+  color: var(--sage);
 }
 
 .upload-panel__result ul {
   margin: 0;
   padding-left: 1.1rem;
-  color: #334155;
-  line-height: 1.6;
+  color: var(--text-muted);
+  line-height: 1.65;
 }
 
 .upload-panel__preview {
   margin: 8px 0 0;
-  padding: 8px;
-  background: #fff;
-  border-radius: 6px;
+  padding: 10px;
+  background: var(--elevated);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
   font-size: 11px;
   white-space: pre-wrap;
   word-break: break-word;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
 }
 
 .upload-panel__refresh {
-  margin-top: 12px;
-  padding: 6px 12px;
-  font-size: 13px;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  background: #fff;
-  color: #475569;
+  margin-top: 14px;
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
   cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
 }
 
 .upload-panel__refresh:hover:not(:disabled) {
-  background: #f8fafc;
+  color: var(--accent);
+  border-color: rgba(196, 92, 38, 0.35);
 }
 
 .upload-panel__refresh:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
+}
+
+.upload-panel details summary {
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-top: 8px;
 }

@@ -1,158 +1,157 @@
-# 项目真实化规划：DevKit 研发团队文档助手
+# 项目场景：ShipLog 研发 On-call 故障排查助手
 
-> 本文档是项目的**业务场景 + 对标 GitHub + 里程碑调整**权威说明。  
-> 面试题改为**场景题**见 [qa-scenario-guide.md](./qa-scenario-guide.md)。
-
----
-
-## 1. 项目重新定位
-
-### 之前（偏 Demo）
-
-> 「企业知识库 RAG」+ PDF 上传 + `/chat`
-
-问题：和 2026 年大量教程项目同质，缺少业务叙事和量化指标。
-
-### 现在（真实场景）
-
-> **DevKit — 研发团队内部文档智能问答**  
-> 服务对象：新接手 `rag-agent` 仓库的开发/实习生  
-> 知识来源：**本项目真实文档**（PLAN、分步指南、qa 卡、README、代码注释）  
-> 核心痛点：文档散、搜不到精确 API 名、新人反复问同样问题
-
-这和 [onyx-dot-app/onyx](https://github.com/onyx-dot-app/onyx)（30k+ stars，接 Confluence/GitHub）解决的是**同一类问题**，只是规模适合个人/实习作品。
+> 本文档是项目的**业务场景 + 对标 GitHub + 里程碑**权威说明。  
+> 面试题见 [qa-scenario-guide.md](./qa/qa-scenario-guide.md) · 面经映射见 [interview/analysis/project-mapping.md](./interview/analysis/project-mapping.md)。
 
 ---
 
-## 2. 对标 GitHub 项目（已用 `gh` 核实 star）
+## 0. 场景演进（与历史里程碑的关系）
 
-| Stars | 项目 | 学什么 | 我们摘什么 |
-|------:|------|--------|-----------|
-| **148k** | [langgenius/dify](https://github.com/langgenius/dify) | 企业知识库产品形态：上传→RAG→Agent→API | 功能 checklist，不 fork |
-| **30k** | [onyx-dot-app/onyx](https://github.com/onyx-dot-app/onyx) | 企业搜索：Slack/Confluence/GitHub 文档问答 | **业务场景叙事** |
-| **3.6k** | [GiovanniPasq/agentic-rag-for-dummies](https://github.com/GiovanniPasq/agentic-rag-for-dummies) | LangGraph 模块化 Agentic RAG | **M4.2 CRAG 状态机** |
-| **862** | [danny-avila/rag_api](https://github.com/danny-avila/rag_api) | RAG 独立 API、按 file_id 管理文档 | **M4.1 文档 API 规范化** |
-| **92** | [CliffsCai/Rag_System](https://github.com/CliffsCai/Rag_System) | 国内企业 KB：混合检索+LangGraph | **M4.3 BM25+向量 RRF** |
-| **313** | [langchain-ai/rag-research-agent-template](https://github.com/langchain-ai/rag-research-agent-template) | 官方 RAG Agent 模板 | M4 目录结构参考 |
+| 阶段 | 场景 | 状态 |
+|------|------|------|
+| M0～M3 | 通用 RAG + 全栈 | ✅ 已完成 |
+| **M4** | **DevKit** — 索引本仓库 `docs/*.md`，验证 Agentic RAG 工程能力 | ✅ 已完成（代码能力保留） |
+| **M5.2 起** | **ShipLog** — 模拟 On-call Runbook / 事故复盘问答 | 📍 **当前定稿方向** |
+| **M6** | ShipLog + Tool Calling（Runbook + incident SQL + 可选搜索） | 可选 |
 
-**原则**：向高 star 项目学**场景和架构**，在 `rag-agent` 里**手写精简版**，README 写明参考来源。
+**不冲突原则**：M4 的混合检索、CRAG、eval、trace **原样复用**；M5.2 只换**知识库内容、prompt、UI 文案、eval 题**，不重写 RAG 引擎。
 
 ---
 
-## 3. 真实用户故事（User Stories）
+## 1. 项目定位
+
+### 之前（M4 · DevKit）
+
+> 研发团队内部文档助手 — 帮新人查 PLAN、分步指南、qa 卡。
+
+问题：能证明工程能力，但**业务叙事偏 meta**，和大量「知识库 Demo」同质，面经「拷打项目」时不够像真实业务。
+
+### 现在（M5.2 起 · ShipLog）
+
+> **ShipLog — 研发 On-call 故障排查助手**  
+> **服务对象**：值班工程师 / SRE  
+> **知识来源**：模拟 Runbook、事故复盘（Postmortem）、服务架构说明（`docs/kb/`）  
+> **核心痛点**：P0 时文档散、搜不到告警码/命令、胡编操作有风险  
+
+对标 [onyx-dot-app/onyx](https://github.com/onyx-dot-app/onyx) 的企业搜索形态，场景换成 **SRE On-call**（更贴美团/字节 Agent 面经）。
+
+---
+
+## 2. 用户故事
 
 | 用户 | 场景 | 期望 |
 |------|------|------|
-| 新实习生 | 「M2 数据流怎么走？」 | 基于 `docs/M2-steps.md` 回答并引用 |
-| 前端开发 | 「CORS 为什么浏览器不通？」 | 引用 `main.py` + qa-m3 相关内容 |
-| 你自己 | 「召回率多少？」 | 用 `eval/` 测试集给出 **Recall@3 数字** |
-| 面试官 | 「答不准怎么排查？」 | 按 Retrieve vs Generate 四层排查（见 qa-scenario-guide） |
+| On-call 工程师 | 「Redis 连接超时，第一步查什么？」 | 引用 Runbook，给出可执行检查步骤 |
+| On-call 工程师 | 「上周类似 OOM 怎么修的？」 | 引用 Postmortem +（M6）查 incident 表 |
+| 面试官 | 「召回率多少？」 | ShipLog eval 20 题 **Recall@3** 数字 |
+| 面试官 | 「能不能 FLUSHALL？」 | CRAG + prompt **拒答/只读 Runbook 禁止项** |
+| 演示观众 | 上传厂商 PDF / 贴告警截图 | M5.3 补充路径，主库仍用 Markdown kb |
 
 ---
 
-## 4. 里程碑调整（在原有 M0～M5 上升级）
+## 3. 知识库策略
 
 ```mermaid
-flowchart LR
-  M3[M3 全栈体验] --> M4[M4 真实化+亮点]
-  M4 --> M5[M5 交付+场景面试]
+flowchart TD
+  A[主库: docs/kb Markdown] -->|import_docs.py| V[向量库 + BM25]
+  B[补充: PDF 上传] -->|热更新| V
+  C[补充: 截图 M5.3] -->|DeepSeek V4 读图→文本 query| V
+  V --> R[混合检索 RRF]
+  R --> G[CRAG → 生成 + sources]
 ```
 
-### M3（不变，当前进行中）
+| 路径 | 角色 | 是否必须 |
+|------|------|----------|
+| `docs/kb/**/*.md` | 主知识库，eval 依据 | ✅ M5.2 |
+| PDF 上传 | 模拟临时厂商手册 | M5.3 |
+| 联网搜索 | 外部实时状态 | M6.0 可选 tool |
+| 用户截图 | 告警图 → DeepSeek V4 思路 A → 文本 RAG | M5.3 |
 
-React UI + SSE + PR 流程。UI 文案改为 DevKit 场景（示例问题来自真实文档）。
+### 目录规划（M5.2 创建）
 
-### M4 拆步（**真实化 + 高 star 亮点**）
+```text
+docs/kb/
+├── architecture/       # 服务拓扑、On-call 流程
+├── runbooks/           # Redis、K8s OOM、502、磁盘、回滚…
+└── postmortems/        # 虚构事故复盘
+```
 
-| 子步 | 做什么 | 对标 | 验收 |
-|------|--------|------|------|
-| **M4.0** | 写清场景 + 索引 `docs/*.md` | Onyx 文档源 | 能问「M3 分几步」 |
-| **M4.1** | `eval/` 黄金测试集 20 题 + 跑批脚本 | 腾讯面经「召回率多少」 | 输出 Recall@3 基线 |
-| **M4.2** | LangGraph CRAG：评分→改写→拒答 | agentic-rag-for-dummies | Bad case 不再胡编 |
-| **M4.3** | BM25 + 向量混合检索 RRF | CliffsCai/Rag_System | 搜 `POST /chat` 更准 |
-| **M4.4** | 请求 trace_id + 检索日志 | rag_api / 生产面经 | 能定位单次 Bad case |
-
-详细步骤见 [M4-steps.md](./M4-steps.md)（M4 开始时创建）。
-
-### M5（交付）
-
-| 项 | 内容 |
-|----|------|
-| Docker Compose | 一键启前后端 |
-| README | 场景说明 + 架构图 + 对标项目 + **评估指标截图** |
-| 场景面试卡 | `docs/qa-m5-scenario.md` 20 道场景题+答案 |
-| 3 分钟介绍稿 | STAR 格式：背景→难点→指标→优化 |
+- 内容为**模拟场景**（参考公开 SRE 实践改写），简历/面试如实说明  
+- **不**使用真实公司内部 PDF/文档  
 
 ---
 
-## 5. 真实文档清单（知识库内容）
+## 4. 技术亮点（已有 + 规划）
 
-M4.0 起，以下文件作为**正式知识库**（不只测简历 PDF）：
-
-| 路径 | 类型 |
-|------|------|
-| `docs/PLAN.md` | 总规划 |
-| `docs/M2-steps.md`, `docs/M3-steps.md` | 分步指南 |
-| `docs/qa-m1.md`, `qa-m2.md`, `qa-m3.md` | 知识卡 |
-| `docs/SCENARIO.md` | 本文件 |
-| `README.md` | 部署手册 |
-
-可选：继续支持 PDF（简历等），但**评估集以项目文档为准**。
-
----
-
-## 6. 评估指标（面经必问，必须能答数字）
-
-参考腾讯/美团/快手 RAG 面经，M4.1 必须产出：
-
-| 指标 | 含义 | 目标（基线） |
-|------|------|-------------|
-| **Recall@3** | Top-3 检索是否包含正确文档块 | 记录基线，M4.3 后对比提升 |
-| **Answer Faithfulness** | 回答是否 grounded（可简化为人工 0/1） | ≥ 80% |
-| **拒答准确率** | 文档没有的问题是否拒答 | 100% on 5 道拒答题 |
-
-存储：`eval/questions.json` + `eval/run_eval.py` + `eval/results/`（结果不入 Git 或只入 summary）
+| 能力 | 里程碑 | 面试讲点 |
+|------|--------|----------|
+| 混合检索 BM25+向量 RRF | M4.3 ✅ | 告警码、`kubectl` 命令精确匹配 |
+| LangGraph CRAG | M4.2 ✅ | 低相关拒答，防胡编操作 |
+| eval Recall@3 | M4.1 ✅ | M5.2 换 ShipLog 题重跑 |
+| trace_id 回放 | M4.4 ✅ | Bad case 复盘 |
+| Docker + pgvector | M5.0～M5.1 | 生产叙事 |
+| PDF 热更新 + 截图提问（思路 A） | M5.3 | 热更新 + DeepSeek 读图→文本检索 |
+| Tool Calling | M6.0 | Runbook vs incident SQL |
+| Multi-Agent | M6.1 | 多路排查汇总 |
 
 ---
 
-## 7. 场景题来源（面经归纳）
+## 5. 对标 GitHub（不变）
 
-以后每步面试题**必须是场景题**，格式见 [qa-scenario-guide.md](./qa-scenario-guide.md)。
-
-面经高频类型（已调研）：
-
-| 类型 | 典型问法 | 来源 |
-|------|----------|------|
-| **量化** | 「召回率多少？怎么量的？」 | 腾讯/牛客 |
-| **排查** | 「回答不准从哪开始查？」 | 腾讯云社区/派聪明 |
-| **诊断** | 「Retrieve 还是 Generate 的问题？」 | RAGAS/Braintrust 文章 |
-| **工程** | 「知识库更新怎么不停服？」 | 腾讯面经 |
-| **场景设计** | 「百万文档你怎么设计？」 | 快手电商面经 |
-| **Trade-off** | 「有没有更好的方案？」 | 美团 Keeta Agent 面经 |
+| Stars | 项目 | 我们摘什么 |
+|------:|------|-----------|
+| **148k** | [langgenius/dify](https://github.com/langgenius/dify) | 产品形态 checklist |
+| **30k** | [onyx-dot-app/onyx](https://github.com/onyx-dot-app/onyx) | 企业搜索叙事 |
+| **3.6k** | [agentic-rag-for-dummies](https://github.com/GiovanniPasq/agentic-rag-for-dummies) | M4.2 CRAG |
+| **92** | [CliffsCai/Rag_System](https://github.com/CliffsCai/Rag_System) | M4.3 混合检索 |
 
 ---
 
-## 8. 简历一句话（定稿方向）
+## 6. 评估指标（M5.2 换题后重跑）
 
-> DevKit 研发团队文档助手：基于 LangGraph Agentic RAG，索引项目真实 Wiki；混合检索 + 来源引用 + 拒答；自建 20 题评估集 Recall@3 XX%；FastAPI + React + Docker。参考 Dify/Onyx 企业知识库场景，核心链路自研。
+| 指标 | 含义 | 说明 |
+|------|------|------|
+| **Recall@3** | Top-3 含正确 Runbook/Postmortem | 主数字，写入 `eval/BASELINE.md` |
+| **拒答准确率** | 库外/危险操作是否拒答 | ≥5 道拒答题 |
+| **Faithfulness** | 回答是否 grounded | M5.2 人工；后续可 RAGAS（backlog U-002） |
+
+PDF/截图 demo 题：**手测**，不进主 eval 20 题。
+
+---
+
+## 7. 简历一句话（M6.3 定稿）
+
+> **ShipLog** 研发 On-call 助手：LangGraph Agentic RAG 索引模拟 Runbook/Postmortem；BM25+向量混合检索；CRAG 低置信拒答防误操作；自建 20 题 eval Recall@3 XX%；pgvector + trace 可复盘；FastAPI + React + Docker。核心链路自研，参考 Dify/Onyx 场景。
+
+---
+
+## 8. 里程碑对照
+
+| 子步 | ShipLog 相关交付 |
+|------|------------------|
+| M5.1 | PG 向量 + trace |
+| **M5.2** | **kb + import + prompt + eval + UI** |
+| **M5.3** | **PDF 热更新 + 截图**（`vision.py` · 思路 A） |
+| M6.0 | search_runbook + query_incident |
+| M6.1 | Multi-Agent + 安全分支 |
+| M6.2 | On-call 多轮记忆 |
+| M6.3 | README + PITCH |
+| M6.4 | 场景面试 20 题 |
+
+详见 [M5-steps.md](./steps/M5-steps.md) · [M6-steps.md](./steps/M6-steps.md)
 
 ---
 
 ## 9. 当前行动项
 
-**现在（规划阶段，本文档）**：✅ 场景定稿 + 里程碑调整 + 场景题规范
-
-**下一步开发**：
-
-1. 继续 **M3.1** 聊天 UI（示例问题改成 DevKit 风格）
-2. M3 完成后进入 **M4.0**（Markdown 入库 + 场景 README）
-3. 每步结束用**场景题**验收（不是概念题）
+- [x] 场景方向确认：**方案 A ShipLog**（2026-07-29）
+- [ ] **继续 M5.1** pgvector + trace
+- [ ] **继续 M5.2** 创建 `docs/kb/` + 场景换皮
 
 ---
 
-## 10. 参考链接
+## 10. 参考
 
-- [派聪明 RAG 真实面经 700 题](https://paicoding.com/real-interview-experience)
-- [腾讯 RAG 面经：召回率/上下文管理](https://paicoding.com/qq-rag-interview)
-- [RAG 不准四层排查](https://cloud.tencent.com/developer/article/2681659)
-- [Dify README](https://github.com/langgenius/dify)
+- [美团 Agent 面经映射](./interview/analysis/project-mapping.md)
+- [升级 backlog](./interview/upgrades/backlog.md)
+- [qa-scenario-guide.md](./qa/qa-scenario-guide.md)

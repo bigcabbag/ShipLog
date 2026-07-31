@@ -1,22 +1,29 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { postChat, type SourceChunk } from "../api/chat";
 import { postChatStream } from "../api/chatStream";
+import {
+  prepareImageFile,
+  prepareImageFromClipboard,
+  type PendingImage,
+} from "../utils/imageUtils";
 import "./ChatPanel.css";
 
 export type ChatMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
+  imagePreview?: string;
   sources?: SourceChunk[];
   model?: string;
   traceId?: string;
+  extractedQuery?: string;
   error?: boolean;
 };
 
 const EXAMPLE_QUESTIONS = [
-  "M3 分几步？每步做什么？",
-  "开发期 CORS 怎么验收？",
-  "M2 的 RAG 数据流怎么走？",
+  "Redis 连接超时怎么排查？",
+  "Pod OOMKilled 反复重启怎么办？",
+  "502 Bad Gateway 怎么定位？",
 ];
 
 type ChatPanelProps = {
@@ -24,11 +31,19 @@ type ChatPanelProps = {
 };
 
 function ChatPanel({ disabled = false }: ChatPanelProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
+  const [pendingImage, setPendingImage] = useState<PendingImage | null>(null);
   const [useRag, setUseRag] = useState(true);
   const [streamOn, setStreamOn] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, loading]);
 
   function patchMessage(id: string, patch: Partial<ChatMessage>) {
     setMessages((prev) =>
@@ -36,18 +51,47 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
     );
   }
 
-  async function sendMessage(text: string) {
-    const trimmed = text.trim();
-    if (!trimmed || loading || disabled) return;
+  async function attachImage(file: File) {
+    setImageError(null);
+    try {
+      const img = await prepareImageFile(file);
+      setPendingImage(img);
+    } catch (err: unknown) {
+      setImageError(err instanceof Error ? err.message : "图片处理失败");
+    }
+  }
 
+  async function sendMessage(text: string, image: PendingImage | null = pendingImage) {
+    const trimmed = text.trim();
+    if ((!trimmed && !image) || loading || disabled) return;
+    if (image && !useRag) {
+      setImageError("截图提问需开启「基于知识库」");
+      return;
+    }
+
+    const displayContent = trimmed || "（附带告警截图）";
     const userMsg: ChatMessage = {
       id: crypto.randomUUID(),
       role: "user",
-      content: trimmed,
+      content: displayContent,
+      imagePreview: image?.previewUrl,
     };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
+    setPendingImage(null);
+    setImageError(null);
     setLoading(true);
+
+    const body = {
+      message: trimmed,
+      use_rag: useRag,
+      ...(image
+        ? {
+            image_base64: image.base64,
+            image_media_type: image.mediaType,
+          }
+        : {}),
+    };
 
     if (streamOn) {
       const assistantId = crypto.randomUUID();
@@ -61,27 +105,25 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
       ]);
 
       try {
-        await postChatStream(
-          { message: trimmed, use_rag: useRag },
-          {
-            onToken: (token) => {
-              setMessages((prev) =>
-                prev.map((m) =>
-                  m.id === assistantId
-                    ? { ...m, content: m.content + token }
-                    : m,
-                ),
-              );
-            },
-            onDone: ({ model, sources, trace_id }) => {
-              patchMessage(assistantId, {
-                model: model || undefined,
-                sources: sources ?? undefined,
-                traceId: trace_id ?? undefined,
-              });
-            },
+        await postChatStream(body, {
+          onToken: (token) => {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantId
+                  ? { ...m, content: m.content + token }
+                  : m,
+              ),
+            );
           },
-        );
+          onDone: ({ model, sources, trace_id, extracted_query }) => {
+            patchMessage(assistantId, {
+              model: model || undefined,
+              sources: sources ?? undefined,
+              traceId: trace_id ?? undefined,
+              extractedQuery: extracted_query ?? undefined,
+            });
+          },
+        });
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "发送失败";
         setMessages((prev) => {
@@ -110,7 +152,7 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
     }
 
     try {
-      const data = await postChat({ message: trimmed, use_rag: useRag });
+      const data = await postChat(body);
       setMessages((prev) => [
         ...prev,
         {
@@ -120,6 +162,7 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
           sources: data.sources ?? undefined,
           model: data.model,
           traceId: data.trace_id ?? undefined,
+          extractedQuery: data.extracted_query ?? undefined,
         },
       ]);
     } catch (err: unknown) {
@@ -143,10 +186,21 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
     void sendMessage(input);
   }
 
+  async function handlePaste(e: React.ClipboardEvent) {
+    const img = await prepareImageFromClipboard(e.clipboardData.items);
+    if (img) {
+      e.preventDefault();
+      setPendingImage(img);
+      setImageError(null);
+    }
+  }
+
+  const canSend = !loading && !disabled && (input.trim().length > 0 || pendingImage !== null);
+
   return (
-    <section className="chat-panel card">
+    <section className={`chat-panel card${disabled ? " chat-panel--disabled" : ""}`}>
       <div className="chat-panel__head">
-        <h2>DevKit 文档问答</h2>
+        <h2>对话</h2>
         <div className="chat-panel__toggles">
           <label className="chat-panel__rag-toggle">
             <input
@@ -155,7 +209,7 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
               onChange={(e) => setUseRag(e.target.checked)}
               disabled={loading || disabled}
             />
-            基于知识库（use_rag）
+            知识库检索
           </label>
           <label className="chat-panel__rag-toggle">
             <input
@@ -169,6 +223,15 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
         </div>
       </div>
 
+      {disabled ? (
+        <div className="chat-panel__gate">
+          <strong>等待后端连接</strong>
+          对话区会在服务就绪后启用。
+          <br />
+          请先运行 <code>docker compose up -d</code>
+        </div>
+      ) : (
+        <>
       <div className="chat-panel__examples">
         <span className="chat-panel__examples-label">试试：</span>
         {EXAMPLE_QUESTIONS.map((q) => (
@@ -187,7 +250,8 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
       <div className="chat-panel__messages" aria-live="polite">
         {messages.length === 0 && (
           <p className="chat-panel__empty">
-            输入问题开始对话。先运行 <code>uv run python scripts/import_docs.py</code> 导入本项目 docs，或左侧上传 PDF/Markdown。
+            输入问题开始排查。可粘贴告警截图（Ctrl+V）。先运行{" "}
+            <code>uv run python scripts/import_docs.py</code> 导入 Runbook，或右侧上传 PDF。
           </p>
         )}
         {messages.map((msg) => (
@@ -196,9 +260,35 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
             className={`chat-bubble chat-bubble--${msg.role}${msg.error ? " chat-bubble--error" : ""}`}
           >
             <p className="chat-bubble__role">{msg.role === "user" ? "你" : "AI"}</p>
+            {msg.imagePreview && (
+              <img
+                className="chat-bubble__image"
+                src={msg.imagePreview}
+                alt="用户上传的告警截图"
+              />
+            )}
             <p className="chat-bubble__content">
-              {msg.content || (loading && msg.role === "assistant" ? "…" : "")}
+              {msg.content}
+              {loading &&
+                msg.role === "assistant" &&
+                !msg.error &&
+                msg.content &&
+                messages[messages.length - 1]?.id === msg.id && (
+                  <span className="chat-panel__stream-cursor" aria-hidden="true" />
+                )}
+              {!msg.content && loading && msg.role === "assistant" && (
+                <span className="chat-panel__typing" aria-hidden="true">
+                  <span className="chat-panel__typing-dot" />
+                  <span className="chat-panel__typing-dot" />
+                  <span className="chat-panel__typing-dot" />
+                </span>
+              )}
             </p>
+            {msg.extractedQuery && !msg.error && (
+              <p className="chat-bubble__meta">
+                已从截图识别：<code>{msg.extractedQuery}</code>
+              </p>
+            )}
             {msg.traceId && !msg.error && (
               <p className="chat-bubble__meta">
                 trace：<code>{msg.traceId}</code>
@@ -224,21 +314,53 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
             )}
           </article>
         ))}
-        {loading && (
+        {loading && streamOn && messages[messages.length - 1]?.role !== "assistant" && (
           <p className="chat-panel__loading">
-            {streamOn ? "AI 正在生成…" : "AI 正在思考…"}
+            <span className="chat-panel__typing" aria-hidden="true">
+              <span className="chat-panel__typing-dot" />
+              <span className="chat-panel__typing-dot" />
+              <span className="chat-panel__typing-dot" />
+            </span>
+            检索与生成中
           </p>
         )}
+        {loading && !streamOn && (
+          <p className="chat-panel__loading">
+            <span className="chat-panel__typing" aria-hidden="true">
+              <span className="chat-panel__typing-dot" />
+              <span className="chat-panel__typing-dot" />
+              <span className="chat-panel__typing-dot" />
+            </span>
+            AI 正在思考
+          </p>
+        )}
+        <div ref={messagesEndRef} />
       </div>
+
+      {pendingImage && (
+        <div className="chat-panel__pending-image">
+          <img src={pendingImage.previewUrl} alt="待发送截图预览" />
+          <button
+            type="button"
+            className="chat-panel__remove-image"
+            onClick={() => setPendingImage(null)}
+            disabled={loading || disabled}
+          >
+            移除截图
+          </button>
+        </div>
+      )}
+      {imageError && <p className="chat-panel__image-error">{imageError}</p>}
 
       <form className="chat-panel__form" onSubmit={handleSubmit}>
         <textarea
           className="chat-panel__input"
           rows={2}
-          placeholder="问项目文档或已上传 PDF 里的内容…"
+          placeholder="问 Runbook、事故复盘… 或粘贴告警截图"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           disabled={loading || disabled}
+          onPaste={(e) => void handlePaste(e)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
@@ -246,10 +368,34 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
             }
           }}
         />
-        <button type="submit" className="chat-panel__send" disabled={loading || disabled || !input.trim()}>
-          {loading ? "发送中…" : "发送"}
-        </button>
+        <div className="chat-panel__actions">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/gif"
+            className="chat-panel__file-input"
+            disabled={loading || disabled}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              if (file) void attachImage(file);
+            }}
+          />
+          <button
+            type="button"
+            className="chat-panel__attach-btn"
+            disabled={loading || disabled}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            贴图
+          </button>
+          <button type="submit" className="chat-panel__send" disabled={!canSend}>
+            {loading ? "发送中" : "发送"}
+          </button>
+        </div>
       </form>
+        </>
+      )}
     </section>
   );
 }

@@ -33,3 +33,7 @@ frontend/node_modules/
 frontend/dist/
 frontend/.env.local
 
+# 个人学习笔记 / 面经（不上传 GitHub）
+docs/codeLearning/
+docs/interview/
+docs/kb/samples/

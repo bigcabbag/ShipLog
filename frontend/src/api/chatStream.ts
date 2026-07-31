@@ -5,11 +5,13 @@ export type ChatStreamDone = {
   model: string;
   sources: SourceChunk[] | null;
   trace_id?: string | null;
+  extracted_query?: string | null;
 };
 
 export type ChatStreamHandlers = {
   onToken: (token: string) => void;
   onDone: (info: ChatStreamDone) => void;
+  onExtracted?: (query: string) => void;
 };
 
 type SsePayload = {
@@ -18,6 +20,7 @@ type SsePayload = {
   model?: string;
   sources?: SourceChunk[] | null;
   trace_id?: string | null;
+  extracted_query?: string | null;
   error?: string;
 };
 
@@ -100,10 +103,14 @@ export async function postChatStream(
       }
 
       if (payload.done) {
+        if (payload.extracted_query && handlers.onExtracted) {
+          handlers.onExtracted(payload.extracted_query);
+        }
         handlers.onDone({
           model: payload.model ?? "",
           sources: payload.sources ?? null,
           trace_id: payload.trace_id ?? null,
+          extracted_query: payload.extracted_query ?? null,
         });
         finished = true;
         return;

@@ -61,7 +61,7 @@ uv run python main.py
 
 ## 前端环境变量
 
-见 `frontend/.env.example`（默认 `VITE_API_BASE_URL=http://127.0.0.1:8000`）。
+见 `frontend/.env.example`（默认留空 = 同源反代；仅直连后端时再设 URL）。
 
 ## 主要接口
 
