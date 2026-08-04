@@ -38,6 +38,12 @@ docs/codeLearning/
 docs/interview/
 docs/kb/samples/
 
+# Agent 规格 / 本地 M0·M1 补充（不进仓库，避免 git status 噪音）
+docs/superpowers/
+docs/steps/M0-steps.md
+docs/steps/M1-steps.md
+docs/qa/qa-m0.md
+
 # 本地工具 / 备份 / Agent 技能锁（不进仓库）
 .agents/
 .codegraph/
