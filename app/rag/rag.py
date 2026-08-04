@@ -1,5 +1,5 @@
 from app.llm import chat
-from app.rag.agent_graph import run_agent_prepare
+from app.rag.multi_agent_graph import run_multi_agent_prepare
 from app.rag.query import resolve_rag_inputs
 
 
@@ -16,7 +16,7 @@ async def rag_chat(
         image_base64=image_base64,
         image_media_type=image_media_type,
     )
-    rag_prompt, sources, early, trace_id = await run_agent_prepare(
+    rag_prompt, sources, early, trace_id = await run_multi_agent_prepare(
         user_message,
         top_k=top_k,
         system_prompt=system_prompt,
@@ -44,7 +44,7 @@ async def prepare_rag_stream_async(
         image_base64=image_base64,
         image_media_type=image_media_type,
     )
-    rag_prompt, sources, early, trace_id = await run_agent_prepare(
+    rag_prompt, sources, early, trace_id = await run_multi_agent_prepare(
         user_message,
         top_k=top_k,
         system_prompt=system_prompt,

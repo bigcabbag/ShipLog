@@ -1,42 +1,42 @@
 # 学习计划（左侧可见 · 随对话更新）
 
-> 工作区副本：在资源管理器打开 `docs/PLAN.md` 即可。每次协作推进里程碑后，我会同步更新本文件。
+> 工作区副本：在资源管理器打开 `docs/plan/PLAN.md` 即可。每次协作推进里程碑后，我会同步更新本文件。
 
 ## 当前进度
 
-- [x] **M0** 环境：uv + Python 3.12 + FastAPI `/health`
-- [x] **M1** 首个 LLM：DeepSeek + `/chat` + [qa-m1.md](./qa/qa-m1.md)
-- [x] **M2** 基础 RAG：PDF 上传 → 切块 → 检索 → 问答 → [qa-m2.md](./qa/qa-m2.md)
-- [x] **M3** 全栈：React 前端 + SSE 流式 → [M3-steps.md](./steps/M3-steps.md) · [qa-m3.md](./qa/qa-m3.md) · PR [#1](https://github.com/bigcabbag/rag-agent/pull/1) 已合并
+- [x] **M0** 环境：uv + Python 3.12 + FastAPI `/health` → [M0-steps.md](../steps/M0-steps.md) · [qa-m0.md](../qa/qa-m0.md)
+- [x] **M1** 首个 LLM：DeepSeek + `/chat` → [M1-steps.md](../steps/M1-steps.md) · [qa-m1.md](../qa/qa-m1.md)
+- [x] **M2** 基础 RAG：PDF 上传 → 切块 → 检索 → 问答 → [qa-m2.md](../qa/qa-m2.md)
+- [x] **M3** 全栈：React 前端 + SSE 流式 → [M3-steps.md](../steps/M3-steps.md) · [qa-m3.md](../qa/qa-m3.md) · PR [#1](https://github.com/bigcabbag/rag-agent/pull/1) 已合并
   - [x] M3.0 开分支 + Vite/React 脚手架 + CORS
   - [x] M3.1 聊天页（非流式 `POST /chat`）
   - [x] M3.2 上传 PDF + 向量库统计 UI
   - [x] M3.3 后端 `POST /chat/stream` SSE
   - [x] M3.4 前端流式 + 打字机效果
   - [x] M3.5 联调 polish + 问答卡 + PR 合并
-- [x] **M4** 真实化 + 亮点 → [SCENARIO.md](./SCENARIO.md) · [M4-steps.md](./steps/M4-steps.md) · [qa-m4.md](./qa/qa-m4.md) · PR [#2](https://github.com/bigcabbag/rag-agent/pull/2) 已合并
+- [x] **M4** 真实化 + 亮点 → [SCENARIO.md](../scenario/SCENARIO.md) · [M4-steps.md](../steps/M4-steps.md) · [qa-m4.md](../qa/qa-m4.md) · PR [#2](https://github.com/bigcabbag/rag-agent/pull/2) 已合并
   - [x] M4.0 Markdown 入库 + DevKit 场景 README
   - [x] M4.1 评估集 20 题 + Recall@3
   - [x] M4.2 LangGraph CRAG（对标 agentic-rag-for-dummies）
   - [x] M4.3 BM25+向量 RRF（对标 CliffsCai）
   - [x] M4.4 trace_id 检索日志
-- [x] **M5** 工程化 + ShipLog 场景 → [M5-steps.md](./steps/M5-steps.md) · [qa-m5.md](./qa/qa-m5.md) · PR [#3](https://github.com/bigcabbag/rag-agent/pull/3) **已合并**
+- [x] **M5** 工程化 + ShipLog 场景 → [M5-steps.md](../steps/M5-steps.md) · [qa-m5.md](../qa/qa-m5.md) · PR [#3](https://github.com/bigcabbag/rag-agent/pull/3) **已合并**
   - [x] M5.0 Docker Compose ✅
   - [x] M5.1 pgvector + trace 迁 PostgreSQL ✅
   - [x] M5.2 ShipLog 场景定稿 + eval ✅（Recall@3=86.8%、幻觉率 17.2%→11.5%）
   - [x] M5.3 **On-call 输入亮点**（PDF 热更新 + 截图）✅
-- [ ] **M6** Agent 演进 + 交付收尾 ← **进行中** → [M6-steps.md](./steps/M6-steps.md) · [qa-m6.md](./qa/qa-m6.md)
-  - [ ] M6.0 Tool Calling ← **代码完成，待验收**
-  - [ ] M6.1 Multi-Agent 分工 + 安全分支
+- [ ] **M6** Agent 演进 + 交付收尾 ← **进行中** → [M6-steps.md](../steps/M6-steps.md) · [qa-m6.md](../qa/qa-m6.md)
+  - [x] M6.0 Tool Calling ✅（三 tool + trace 回放已验收）
+  - [ ] M6.1 Multi-Agent 分工 + 安全分支 ← **代码完成，待验收**
   - [ ] M6.2 On-call 会话记忆 + 多步规划
   - [ ] M6.3 README 简历化 + `PITCH.md`（原 M5.3）
   - [ ] M6.4 场景面试 20 题自测（原 M5.5）
 
-**项目场景**：**ShipLog — 研发 On-call 故障排查助手**（M5.2 起；M4 阶段为 DevKit 文档助手，见 [SCENARIO.md](./SCENARIO.md)）  
-**面试题规则**：每步出**场景题**（面经驱动），见 [qa-scenario-guide.md](./qa/qa-scenario-guide.md)  
-**秋招面经库**（外部面经收集 + 项目映射 + 升级 backlog）：[interview/README.md](./interview/README.md)
+**项目场景**：**ShipLog — 研发 On-call 故障排查助手**（M5.2 起；M4 阶段为 DevKit 文档助手，见 [SCENARIO.md](../scenario/SCENARIO.md)）  
+**面试题规则**：每步出**场景题**（面经驱动），见 [qa-scenario-guide.md](../qa/qa-scenario-guide.md)  
+**秋招面经库**（外部面经收集 + 项目映射 + 升级 backlog）：[interview/README.md](../interview/README.md)
 
-**下一步**：验收 **M6.0**（三 tool + trace 回放）→ 说 **「继续 M6.1」**
+**下一步**：验收 **M6.1**（Multi-Agent trace + FLUSHALL 策略回答）→ 说 **「继续 M6.2」**
 
 ## 协作方式：PR 流程（从 M3 起）
 
@@ -515,9 +515,9 @@ flowchart LR
 
 ## 下一步
 
-**M1 已完成**：DeepSeek `/chat` 可用，见 [qa-m1.md](./qa/qa-m1.md)。
+**M1 已完成**：DeepSeek `/chat` 可用，见 [qa-m1.md](../qa/qa-m1.md)。
 
-**下次有空（M2）**：验收 M2.3（`/chat` + `use_rag: true`），见 [qa-m2.md](./qa/qa-m2.md)。
+**下次有空（M2）**：验收 M2.3（`/chat` + `use_rag: true`），见 [qa-m2.md](../qa/qa-m2.md)。
 
 **忙公司项目时**：复习 qa-m1，偶尔跑通 `/health` 和 `/chat` 即可。
 

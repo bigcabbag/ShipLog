@@ -1,7 +1,7 @@
 # DevKit 文档助手 — M4 面试问答
 
 > 场景题规范见 [qa-scenario-guide.md](./qa-scenario-guide.md)  
-> 业务场景见 [SCENARIO.md](./SCENARIO.md)
+> 业务场景见 [SCENARIO.md](../scenario/SCENARIO.md)
 
 ---
 

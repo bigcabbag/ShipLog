@@ -1,7 +1,7 @@
 ﻿# rag-agent
 
 **DevKit — 研发团队文档助手**：帮新人查本仓库 PLAN、分步指南、qa 卡与 API 说明。  
-业务场景详见 [docs/SCENARIO.md](./docs/SCENARIO.md)。
+业务场景详见 [docs/scenario/SCENARIO.md](./docs/scenario/SCENARIO.md)。
 
 企业知识库 RAG 学习项目（Python 3.12 + uv + FastAPI + React）。
 
@@ -77,7 +77,7 @@ uv run python main.py
 
 ## 学习进度
 
-见 [docs/PLAN.md](./docs/PLAN.md) · [docs/M4-steps.md](./docs/M4-steps.md) · 面试题 [docs/qa-m4.md](./docs/qa-m4.md)
+见 [docs/plan/PLAN.md](./docs/plan/PLAN.md) · [docs/steps/M4-steps.md](./docs/steps/M4-steps.md) · 面试题 [docs/qa/qa-m4.md](./docs/qa/qa-m4.md)
 
 ## Cursor / VS Code
 

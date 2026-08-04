@@ -71,3 +71,74 @@
 - [ ] 能口述 Agent 图：agent → tools → agent → synthesize
 - [ ] 能解释三 tool 分工表
 - [ ] 能用 trace_id 回放 tool 选择
+
+---
+
+## M6.1 Multi-Agent
+
+### 概念
+
+**Q：M6.0 和 M6.1 架构差什么？**
+
+**A：**
+- M6.0：单 Agent bind 3 tools，LLM 自选工具
+- M6.1：**协调 Agent 派单** → Runbook / Incident / Topology **专家各 1 工具** → **merge 汇总**；危险题走 **safe_response** 策略分支
+
+| trace step | 含义 |
+|------------|------|
+| `safe_check` | 是否走安全分支 |
+| `agent_dispatch` | 协调者派了哪些专家 |
+| `agent_result` | 某专家 tool 结果摘要 |
+| `agent_merge` / `safe_response` | 汇总或策略回答 |
+
+---
+
+### 场景题（M6.1）
+
+**Q5：** Multi-Agent 里 Runbook 专家说先查日志，Incident 专家说上次是配置错误直接回滚，你怎么汇总？
+
+**A：**
+1. **现象**：两路专家结论冲突，用户收到矛盾建议。
+2. **根因**：Runbook 给通用 SOP；Incident 给**单次**历史根因，不可直接等同本次。
+3. **排查**：看 trace `agent_dispatch.tasks` 和各路 `agent_result`；确认 incident 的 service/keyword 是否匹配当前告警。
+4. **更好方案**：merge prompt 约定优先级——**Runbook 步骤 + topology 结构化数据为准**，事故记录作背景；必要时协调者再派一轮补查。
+5. **本项目**：`multi_agent_graph.py` `MERGE_PROMPT` 第 2 条；trace `agent_merge.agents_used`。
+
+---
+
+**Q6：** 用户问「生产 Redis 能 FLUSHALL 吗」，系统应该拒答还是回答？
+
+**A：**
+1. **现象**：若回「无法回答」，用户不知道是不能做还是系统坏了。
+2. **根因**：这是**有标准答案的策略题**，Runbook 有禁止条款；不是 abstain 题。
+3. **做法**：`safe_check` 命中 → `safe_response`：**明确答不能** + 风险 + Runbook 依据 + SRE Lead 审批 + 替代方案；**不给** FLUSHALL 执行步骤。
+4. **例外**：「FLUSHALL 事故怎么发生的」含历史标记 → **不走** safe_response，派 incident 专家。
+5. **本项目**：`needs_safe_branch()` + `HISTORICAL_MARKERS`；eval q26 `should_abstain: false`。
+
+---
+
+**Q7：** trace 里怎么区分 M6.0 单 Agent 和 M6.1 Multi-Agent？
+
+**A：**
+1. M6.0：`tool_start` / `tool_end` / `agent_synthesize`（LLM 直接选 tool）
+2. M6.1：`agent_dispatch` → 多路 `agent_result` → `agent_merge`；或 `safe_check` → `safe_response`
+3. 安全题看 `safe_response.policy: true`
+
+---
+
+**Q8：** 协调 Agent JSON 解析失败怎么办？
+
+**A：**
+1. **现象**：coordinator 输出非 JSON，专家未派单。
+2. **根因**：模型格式漂移。
+3. **手段**：`_extract_json_object` 抽 JSON；失败则 **fallback** 默认派 runbook 专家；trace 标 `coordinator_fallback: true`。
+4. **更好方案**：Pydantic structured output / 重试 1 次。
+5. **本项目**：`_coordinator_node` fallback + trace 字段。
+
+---
+
+### M6.1 自检
+
+- [ ] 能口述 Multi-Agent 图：safe_check → coordinator → specialists → merge
+- [ ] 能解释 safe_response vs abstain 区别
+- [ ] 能用 trace 看 agent_dispatch / agent_merge

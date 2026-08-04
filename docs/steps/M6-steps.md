@@ -4,7 +4,7 @@
 > **目标**：ShipLog On-call **Agent** 能力 + README/PITCH/面试自测。  
 > M4/M5 的 CRAG 仍负责**检索质量**；M6.0～M6.2 负责 **Agent**；M6.3～M6.4 负责 **简历交付**。
 
-**当前进度：M6.0 Tool Calling 代码已完成，待验收。分支 `feature/m6-agent`。**
+**当前进度：M6.0 已验收；M6.1 Multi-Agent 代码完成，待验收。分支 `feature/m6-agent`。**
 
 ---
 
@@ -95,24 +95,42 @@ incidents：
 
 ## M6.1 Multi-Agent：On-call 分工
 
-**目标**：复杂故障由协调 Agent 拆分——查 Runbook、查历史、（可选）查外部。
+**目标**：复杂故障由协调 Agent 拆分——查 Runbook、查历史、查拓扑；危险操作走**安全策略回答**（非空白拒答）。
 
 ### Agent 分工
 
 | Agent | 职责 |
 |-------|------|
-| **协调 Agent** | 解析告警 → 分配子任务 → 汇总 |
-| **Runbook Agent** | RAG + BM25 混合检索 |
-| **Incident Agent** | `query_incident` + 复盘摘要 |
-| **External Agent**（可选） | M6.0 不做 web_search；M6.1 可扩展 metrics/日志 adapter |
+| **协调 Agent** | 解析问题 → JSON 派单 → 指定专家与参数 |
+| **Runbook 专家** | `search_runbook`（RRF + CRAG） |
+| **Incident 专家** | `query_incident` + 复盘摘要 |
+| **Topology 专家** | `get_service_topology` 上下游依赖 |
 
-### LangGraph 安全分支
+### LangGraph 流程
 
-- 检测到 FLUSHALL、删库等 → **safe_response 节点**，只引用 Runbook 禁止条款
+```mermaid
+flowchart TB
+  START --> safe_check
+  safe_check -->|危险操作/策略题| safe_response
+  safe_check -->|正常| coordinator
+  coordinator --> specialists
+  specialists --> merge
+  safe_response --> END
+  merge --> END
+```
+
+### 安全分支（safe_response）
+
+- 检测 FLUSHALL、删库等 → **safe_response 节点**
+- **明确答「不能/禁止」** + Runbook 依据 + 审批提醒 + 替代方案
+- **不**输出危险命令步骤；**不**空白拒答
+- 历史复盘题（含「事故/复盘/怎么发生」）**不走**安全分支，正常派 incident 专家
 
 ### 验收
 
-- 两路结果汇总；危险操作拒答
+- 「order-service 502 影响谁？」→ trace 含 `agent_dispatch` + 多路 `agent_result` + `agent_merge`
+- 「生产 Redis 能 FLUSHALL 吗？」→ trace 含 `safe_check.route=safe_response` + `safe_response.policy=true`；回答明确禁止
+- 「Redis FLUSHALL 事故怎么发生的？」→ **不走** safe_response，走 coordinator + incident
 
 ### 场景题
 
@@ -149,7 +167,7 @@ incidents：
 
 ### 要做的事
 
-- 更新 [SCENARIO.md](../SCENARIO.md)
+- 更新 [SCENARIO.md](../scenario/SCENARIO.md)
 - README：场景、架构图、技术栈、Docker/PG 启动、eval 数字 + Agent 亮点
 - `docs/PITCH.md`：背景 → 方案 → 指标 → 难点
 - 链到 `eval/BASELINE.md`
