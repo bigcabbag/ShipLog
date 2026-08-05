@@ -6,12 +6,15 @@ export type ChatStreamDone = {
   sources: SourceChunk[] | null;
   trace_id?: string | null;
   extracted_query?: string | null;
+  thread_id?: string | null;
+  plan_steps?: string[] | null;
 };
 
 export type ChatStreamHandlers = {
   onToken: (token: string) => void;
   onDone: (info: ChatStreamDone) => void;
   onExtracted?: (query: string) => void;
+  onPlanSteps?: (steps: string[], threadId?: string | null) => void;
 };
 
 type SsePayload = {
@@ -21,6 +24,8 @@ type SsePayload = {
   sources?: SourceChunk[] | null;
   trace_id?: string | null;
   extracted_query?: string | null;
+  thread_id?: string | null;
+  plan_steps?: string[] | null;
   error?: string;
 };
 
@@ -98,6 +103,10 @@ export async function postChatStream(
         throw new Error(payload.error);
       }
 
+      if (payload.plan_steps?.length && handlers.onPlanSteps) {
+        handlers.onPlanSteps(payload.plan_steps, payload.thread_id ?? null);
+      }
+
       if (typeof payload.token === "string") {
         handlers.onToken(payload.token);
       }
@@ -111,6 +120,8 @@ export async function postChatStream(
           sources: payload.sources ?? null,
           trace_id: payload.trace_id ?? null,
           extracted_query: payload.extracted_query ?? null,
+          thread_id: payload.thread_id ?? null,
+          plan_steps: payload.plan_steps ?? null,
         });
         finished = true;
         return;

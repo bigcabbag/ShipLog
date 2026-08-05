@@ -1,24 +1,22 @@
 import { useEffect, useRef, useState } from "react";
-import { postChat, type SourceChunk } from "../api/chat";
+import { postChat } from "../api/chat";
+import type { ChatMessage } from "../types/chat";
 import { postChatStream } from "../api/chatStream";
 import {
   prepareImageFile,
   prepareImageFromClipboard,
   type PendingImage,
 } from "../utils/imageUtils";
+import {
+  getOrCreateThreadId,
+  resetThreadId,
+} from "../utils/threadId";
+import {
+  clearChatMessages,
+  loadChatMessages,
+  saveChatMessages,
+} from "../utils/chatStorage";
 import "./ChatPanel.css";
-
-export type ChatMessage = {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  imagePreview?: string;
-  sources?: SourceChunk[];
-  model?: string;
-  traceId?: string;
-  extractedQuery?: string;
-  error?: boolean;
-};
 
 const EXAMPLE_QUESTIONS = [
   "Redis 连接超时怎么排查？",
@@ -33,17 +31,28 @@ type ChatPanelProps = {
 function ChatPanel({ disabled = false }: ChatPanelProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const initialThreadId = getOrCreateThreadId();
+  const [messages, setMessages] = useState<ChatMessage[]>(() =>
+    loadChatMessages(initialThreadId),
+  );
   const [input, setInput] = useState("");
   const [pendingImage, setPendingImage] = useState<PendingImage | null>(null);
   const [useRag, setUseRag] = useState(true);
   const [streamOn, setStreamOn] = useState(true);
   const [loading, setLoading] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
+  const [threadId, setThreadId] = useState(initialThreadId);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      saveChatMessages(threadId, messages);
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [messages, threadId]);
 
   function patchMessage(id: string, patch: Partial<ChatMessage>) {
     setMessages((prev) =>
@@ -85,6 +94,7 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
     const body = {
       message: trimmed,
       use_rag: useRag,
+      thread_id: threadId,
       ...(image
         ? {
             image_base64: image.base64,
@@ -106,6 +116,12 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
 
       try {
         await postChatStream(body, {
+          onPlanSteps: (steps, returnedThreadId) => {
+            if (returnedThreadId) {
+              setThreadId(returnedThreadId);
+            }
+            patchMessage(assistantId, { planSteps: steps });
+          },
           onToken: (token) => {
             setMessages((prev) =>
               prev.map((m) =>
@@ -115,12 +131,16 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
               ),
             );
           },
-          onDone: ({ model, sources, trace_id, extracted_query }) => {
+          onDone: ({ model, sources, trace_id, extracted_query, thread_id, plan_steps }) => {
+            if (thread_id) {
+              setThreadId(thread_id);
+            }
             patchMessage(assistantId, {
               model: model || undefined,
               sources: sources ?? undefined,
               traceId: trace_id ?? undefined,
               extractedQuery: extracted_query ?? undefined,
+              planSteps: plan_steps ?? undefined,
             });
           },
         });
@@ -153,6 +173,9 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
 
     try {
       const data = await postChat(body);
+      if (data.thread_id) {
+        setThreadId(data.thread_id);
+      }
       setMessages((prev) => [
         ...prev,
         {
@@ -163,6 +186,7 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
           model: data.model,
           traceId: data.trace_id ?? undefined,
           extractedQuery: data.extracted_query ?? undefined,
+          planSteps: data.plan_steps ?? undefined,
         },
       ]);
     } catch (err: unknown) {
@@ -179,6 +203,14 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleNewSession() {
+    clearChatMessages(threadId);
+    setMessages([]);
+    setInput("");
+    setPendingImage(null);
+    setThreadId(resetThreadId());
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -202,6 +234,14 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
       <div className="chat-panel__head">
         <h2>对话</h2>
         <div className="chat-panel__toggles">
+          <button
+            type="button"
+            className="chat-panel__new-session"
+            disabled={loading || disabled}
+            onClick={handleNewSession}
+          >
+            新会话
+          </button>
           <label className="chat-panel__rag-toggle">
             <input
               type="checkbox"
@@ -260,6 +300,13 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
             className={`chat-bubble chat-bubble--${msg.role}${msg.error ? " chat-bubble--error" : ""}`}
           >
             <p className="chat-bubble__role">{msg.role === "user" ? "你" : "AI"}</p>
+            {msg.planSteps && msg.planSteps.length > 0 && !msg.error && (
+              <ol className="chat-bubble__plan">
+                {msg.planSteps.map((step, i) => (
+                  <li key={`${msg.id}-plan-${i}`}>{step}</li>
+                ))}
+              </ol>
+            )}
             {msg.imagePreview && (
               <img
                 className="chat-bubble__image"
@@ -400,4 +447,5 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
   );
 }
 
+export type { ChatMessage } from "../types/chat";
 export default ChatPanel;

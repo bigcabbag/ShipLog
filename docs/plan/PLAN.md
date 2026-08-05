@@ -27,8 +27,8 @@
   - [x] M5.3 **On-call 输入亮点**（PDF 热更新 + 截图）✅
 - [ ] **M6** Agent 演进 + 交付收尾 ← **进行中** → [M6-steps.md](../steps/M6-steps.md) · [qa-m6.md](../qa/qa-m6.md)
   - [x] M6.0 Tool Calling ✅（三 tool + trace 回放已验收）
-  - [ ] M6.1 Multi-Agent 分工 + 安全分支 ← **代码完成，待验收**
-  - [ ] M6.2 On-call 会话记忆 + 多步规划
+  - [x] M6.1 Multi-Agent 分工 + 安全分支 ✅
+  - [ ] M6.2 On-call 会话记忆 + 多步规划 ← **代码完成，待验收**
   - [ ] M6.3 README 简历化 + `PITCH.md`（原 M5.3）
   - [ ] M6.4 场景面试 20 题自测（原 M5.5）
 
@@ -36,7 +36,7 @@
 **面试题规则**：每步出**场景题**（面经驱动），见 [qa-scenario-guide.md](../qa/qa-scenario-guide.md)  
 **秋招面经库**（外部面经收集 + 项目映射 + 升级 backlog）：[interview/README.md](../interview/README.md)
 
-**下一步**：验收 **M6.1**（Multi-Agent trace + FLUSHALL 策略回答）→ 说 **「继续 M6.2」**
+**下一步**：验收 **M6.2**（多轮指代 + UI 排查计划 + 刷新恢复气泡 + trace `planning`）→ 说 **「继续 M6.3」**
 
 ## 协作方式：PR 流程（从 M3 起）
 

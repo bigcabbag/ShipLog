@@ -4,7 +4,7 @@
 > **目标**：ShipLog On-call **Agent** 能力 + README/PITCH/面试自测。  
 > M4/M5 的 CRAG 仍负责**检索质量**；M6.0～M6.2 负责 **Agent**；M6.3～M6.4 负责 **简历交付**。
 
-**当前进度：M6.0 已验收；M6.1 Multi-Agent 代码完成，待验收。分支 `feature/m6-agent`。**
+**当前进度：M6.0 已验收；M6.1 已提交；M6.2 代码完成，待验收。分支 `feature/m6-agent`。**
 
 ---
 
@@ -142,20 +142,44 @@ flowchart TB
 
 **目标**：多轮 On-call 对话 + 复杂故障分步排查。
 
+### 实现要点（M6.2 已编码）
+
+| 模块 | 作用 |
+|------|------|
+| `app/rag/checkpointer.py` | `AsyncPostgresSaver` 连接 PG，启动时 `setup()` |
+| `app/rag/session.py` | `record_thread_turn` 写入 `turn_history` |
+| `multi_agent_graph.py` | `planning` 节点；`thread_id` checkpointer；每轮 `Overwrite` 重置 ephemeral 状态 |
+| `schemas` / `main` | `thread_id`、`plan_steps`；SSE 先推 `plan_steps` 再推 token |
+| `frontend` | `localStorage` thread_id；气泡内排查计划；「新会话」；**`chatStorage.ts` 刷新恢复 UI** |
+
+### LangGraph 流程（正常路径）
+
+```mermaid
+flowchart TB
+  START --> safe_check
+  safe_check -->|策略题| safe_response --> END
+  safe_check -->|正常| planning
+  planning --> coordinator
+  coordinator --> specialists --> merge --> END
+```
+
 ### 要做的事
 
-- LangGraph **checkpointer**
-- **Planning node**：拆 2～4 步排查计划
-- 前端：步骤列表（可与 M5.3 截图 SSE 共用事件类型）
+- [x] LangGraph **checkpointer**（PostgresSaver）
+- [x] **Planning node**：拆 2～4 步排查计划
+- [x] 前端：步骤列表 + SSE `plan_steps`
+- [x] 前端：**localStorage 聊天气泡缓存**（刷新后 UI 恢复，方案 A）
 
 ### 验收
 
-- 「刚才那个告警」能指代上一轮问题
-- 复杂题输出分步计划并执行
+- 「刚才那个告警」能指代上一轮问题（同 `thread_id` 第二轮）
+- 复杂题 trace/UI 可见 `planning.plan_steps`
+- 点「新会话」换 thread_id 后指代失效（预期）
+- **F5 刷新**后同 thread 聊天气泡仍在（plan_steps / sources / trace 保留；截图预览不保留）
 
 ### 场景题
 
-「Agent 记忆和 RAG 知识库区别？」
+「Agent 记忆和 RAG 知识库区别？」→ 见 [qa-m6.md](../qa/qa-m6.md) M6.2 章节。
 
 ---
 

@@ -1,21 +1,32 @@
-"""M6.1：Multi-Agent 协调 + 专家分工 + 危险操作安全策略分支。"""
+"""M6.1：Multi-Agent 协调 + 专家分工 + 危险操作安全策略分支。
+M6.2：Planning 节点 + Postgres checkpointer 多轮 turn_history。
+"""
 
 from __future__ import annotations
 
+import asyncio
 import json
 import operator
 import re
-from functools import lru_cache
-from typing import Annotated, Literal, Required, TypedDict
+from typing import Annotated, Literal, Required, TypedDict, cast
 
 from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.graph import END, START, StateGraph
+from langgraph.types import Overwrite
 
 from app.llm import get_llm
 from app.rag.agent_graph import _collect_sources, _summarize_tool_content
+from app.rag.checkpointer import get_async_checkpointer
+from app.rag.session_context import (
+    enrich_question_with_history,
+    format_turn_history,
+    graph_config,
+)
 from app.rag.trace import new_trace_id, save_trace
 from app.tools import _get_topology, _query_incident, _search_runbook
 
+_graph = None
+_graph_lock = asyncio.Lock()
 DANGEROUS_KEYWORDS = (
     "flushall",
     "flushdb",
@@ -41,7 +52,7 @@ HISTORICAL_MARKERS = (
     "案例",
 )
 
-COORDINATOR_SYSTEM = """你是 ShipLog On-call **协调 Agent**。根据用户问题，决定派哪些专家子任务。
+COORDINATOR_SYSTEM = """你是 ShipLog On-call **协调 Agent**。根据用户问题、对话历史与排查计划，决定派哪些专家子任务。
 
 专家及能力：
 - runbook：排查步骤、Runbook、SOP、第一步做什么 → args 需 query（中文检索句）
@@ -55,6 +66,16 @@ COORDINATOR_SYSTEM = """你是 ShipLog On-call **协调 Agent**。根据用户�
 
 输出格式：
 {"tasks":[{"agent":"runbook","args":{"query":"..."}},{"agent":"topology","args":{"service":"order-service"}}]}"""
+
+PLANNING_SYSTEM = """你是 ShipLog On-call **规划 Agent**。根据用户问题与对话历史，输出 2～4 步排查计划（中文短句）。
+
+规则：
+1. 步骤具体、可执行，适合 On-call 值班场景
+2. 简单问题可 1～2 步；复杂故障 3～4 步
+3. 只输出 JSON，不要 markdown 代码块
+
+输出格式：
+{"plan_steps":["步骤1","步骤2","步骤3"]}"""
 
 SAFE_POLICY_PROMPT = """你是 ShipLog On-call 安全助手。用户询问了**危险操作或合规策略**问题。
 
@@ -88,6 +109,8 @@ class MultiAgentState(TypedDict, total=False):
     search_query: str
     system_prompt: str | None
     trace_steps: Annotated[list[dict], operator.add]
+    turn_history: Annotated[list[dict], operator.add]
+    plan_steps: list[str]
     safe_branch: bool
     coordinator_plan: dict
     tool_results: list[dict]
@@ -97,8 +120,25 @@ class MultiAgentState(TypedDict, total=False):
     abstain_reply: str | None
 
 
+def _format_plan_steps(steps: list[str]) -> str:
+    if not steps:
+        return "（无显式计划，按问题直接排查）"
+    return "\n".join(f"{i + 1}. {s}" for i, s in enumerate(steps))
+
+
 def _question_text(state: MultiAgentState) -> str:
     return (state.get("search_query") or state["question"]).strip()
+
+
+def _should_skip_planning_llm(question: str, history: list[dict]) -> bool:
+    """首轮简单问句跳过 Planning LLM（fast-path，省延迟）。"""
+    if history:
+        return False
+    text = question.strip()
+    if len(text) > 80:
+        return False
+    complex_markers = ("还影响", "上下游", "事故", "根因", "多个", "对比", "以及", "分别")
+    return not any(marker in text for marker in complex_markers)
 
 
 def needs_safe_branch(question: str) -> bool:
@@ -124,6 +164,18 @@ def _extract_json_object(raw: str) -> dict:
     return json.loads(text)
 
 
+async def _invoke_json_llm(*, system: str, user_content: str) -> tuple[dict | None, str | None]:
+    llm = get_llm()
+    raw = await llm.ainvoke(
+        [SystemMessage(content=system), HumanMessage(content=user_content)]
+    )
+    content = raw.content if isinstance(raw.content, str) else str(raw.content)
+    try:
+        return _extract_json_object(content), None
+    except (json.JSONDecodeError, TypeError, ValueError) as exc:
+        return None, str(exc)
+
+
 def _normalize_tasks(plan: dict) -> list[dict]:
     tasks = plan.get("tasks") or []
     allowed = {"runbook", "incident", "topology"}
@@ -141,6 +193,19 @@ def _normalize_tasks(plan: dict) -> list[dict]:
     return normalized
 
 
+def _normalize_plan_steps(raw: dict, question: str) -> list[str]:
+    steps = raw.get("plan_steps") or raw.get("steps") or []
+    normalized: list[str] = []
+    if isinstance(steps, list):
+        for item in steps:
+            text = str(item).strip()
+            if text:
+                normalized.append(text)
+    if not normalized:
+        normalized = [f"围绕「{question[:80]}」收集 Runbook / 拓扑 / 事故信息并给出建议"]
+    return normalized[:4]
+
+
 async def _safe_check_node(state: MultiAgentState) -> dict:
     question = _question_text(state)
     safe = needs_safe_branch(question)
@@ -149,7 +214,7 @@ async def _safe_check_node(state: MultiAgentState) -> dict:
         "trace_steps": [
             {
                 "step": "safe_check",
-                "route": "safe_response" if safe else "coordinator",
+                "route": "safe_response" if safe else "planning",
                 "matched": safe,
             }
         ],
@@ -157,7 +222,7 @@ async def _safe_check_node(state: MultiAgentState) -> dict:
 
 
 def _route_after_safe_check(state: MultiAgentState) -> str:
-    return "safe_response" if state.get("safe_branch") else "coordinator"
+    return "safe_response" if state.get("safe_branch") else "planning"
 
 
 async def _safe_response_node(state: MultiAgentState) -> dict:
@@ -211,25 +276,62 @@ async def _safe_response_node(state: MultiAgentState) -> dict:
     }
 
 
+async def _planning_node(state: MultiAgentState) -> dict:
+    question = _question_text(state)
+    history = state.get("turn_history") or []
+
+    if _should_skip_planning_llm(question, history):
+        plan_steps = _normalize_plan_steps({}, question)
+        return {
+            "plan_steps": plan_steps,
+            "trace_steps": [
+                {
+                    "step": "planning",
+                    "plan_steps": plan_steps,
+                    "history_turns": len(history),
+                    "planning_skipped": True,
+                }
+            ],
+        }
+
+    history_text = format_turn_history(history)
+    parsed, parse_error = await _invoke_json_llm(
+        system=PLANNING_SYSTEM,
+        user_content=(
+            f"对话历史：\n{history_text}\n\n"
+            f"当前问题：{question}\n\n"
+            "请输出排查计划 JSON。"
+        ),
+    )
+    plan_steps = _normalize_plan_steps(parsed or {}, question)
+
+    step: dict = {
+        "step": "planning",
+        "plan_steps": plan_steps,
+        "history_turns": len(history),
+    }
+    if parse_error:
+        step["planning_fallback"] = True
+        step["parse_error"] = parse_error[:120]
+
+    return {"plan_steps": plan_steps, "trace_steps": [step]}
+
+
 async def _coordinator_node(state: MultiAgentState) -> dict:
     question = _question_text(state)
-    llm = get_llm()
-    raw = await llm.ainvoke(
-        [
-            SystemMessage(content=COORDINATOR_SYSTEM),
-            HumanMessage(content=question),
-        ]
+    history_text = format_turn_history(state.get("turn_history") or [])
+    plan_text = _format_plan_steps(state.get("plan_steps") or [])
+    parsed, parse_error = await _invoke_json_llm(
+        system=COORDINATOR_SYSTEM,
+        user_content=(
+            f"对话历史：\n{history_text}\n\n"
+            f"排查计划：\n{plan_text}\n\n"
+            f"当前问题：{question}\n\n"
+            "请输出专家派单 JSON。"
+        ),
     )
-    content = raw.content if isinstance(raw.content, str) else str(raw.content)
 
-    plan: dict = {"tasks": []}
-    parse_error: str | None = None
-    try:
-        parsed = _extract_json_object(content)
-        plan["tasks"] = _normalize_tasks(parsed)
-    except (json.JSONDecodeError, TypeError, ValueError) as exc:
-        parse_error = str(exc)
-
+    plan: dict = {"tasks": _normalize_tasks(parsed or {})}
     if not plan["tasks"]:
         plan["tasks"] = [{"agent": "runbook", "args": {"query": question}}]
 
@@ -377,11 +479,11 @@ async def _merge_node(state: MultiAgentState) -> dict:
     }
 
 
-@lru_cache
-def get_multi_agent_graph():
+def _build_multi_agent_graph():
     builder = StateGraph(MultiAgentState)
     builder.add_node("safe_check", _safe_check_node)
     builder.add_node("safe_response", _safe_response_node)
+    builder.add_node("planning", _planning_node)
     builder.add_node("coordinator", _coordinator_node)
     builder.add_node("specialists", _specialists_node)
     builder.add_node("merge", _merge_node)
@@ -390,13 +492,84 @@ def get_multi_agent_graph():
     builder.add_conditional_edges(
         "safe_check",
         _route_after_safe_check,
-        {"safe_response": "safe_response", "coordinator": "coordinator"},
+        {"safe_response": "safe_response", "planning": "planning"},
     )
     builder.add_edge("safe_response", END)
+    builder.add_edge("planning", "coordinator")
     builder.add_edge("coordinator", "specialists")
     builder.add_edge("specialists", "merge")
     builder.add_edge("merge", END)
-    return builder.compile()
+    return builder
+
+
+async def get_multi_agent_graph():
+    global _graph
+    async with _graph_lock:
+        if _graph is None:
+            checkpointer = await get_async_checkpointer()
+            _graph = _build_multi_agent_graph().compile(checkpointer=checkpointer)
+        return _graph
+
+
+def _unwrap_state_value(value: object) -> object:
+    """checkpointer 回合里未改写的字段可能仍是 LangGraph Overwrite 包装。"""
+    if isinstance(value, Overwrite):
+        return value.value
+    return value
+
+
+def _state_str(value: object) -> str | None:
+    raw = _unwrap_state_value(value)
+    return raw if isinstance(raw, str) else None
+
+
+def _state_route(value: object) -> Literal["generate", "abstain"]:
+    raw = _unwrap_state_value(value)
+    if raw in ("generate", "abstain"):
+        return raw
+    return "generate"
+
+
+def _state_dict_list(value: object) -> list[dict]:
+    raw = _unwrap_state_value(value)
+    return raw if isinstance(raw, list) else []
+
+
+def _state_str_list(value: object) -> list[str]:
+    raw = _unwrap_state_value(value)
+    if not isinstance(raw, list):
+        return []
+    return [str(item) for item in raw]
+
+
+def _turn_invoke_payload(
+    *,
+    message: str,
+    top_k: int,
+    trace_id: str,
+    search_query: str,
+    system_prompt: str | None,
+) -> MultiAgentState:
+    """每轮重置 ephemeral 字段；turn_history 由 checkpointer 保留。"""
+    return cast(
+        MultiAgentState,
+        {
+            "question": message,
+            "top_k": top_k,
+            "trace_id": trace_id,
+            "search_query": search_query,
+            "system_prompt": system_prompt,
+            "trace_steps": Overwrite([]),
+            "plan_steps": Overwrite([]),
+            "safe_branch": Overwrite(False),
+            "coordinator_plan": Overwrite({}),
+            "tool_results": Overwrite([]),
+            "route": Overwrite("generate"),
+            "sources": Overwrite([]),
+            "rag_prompt": Overwrite(""),
+            "abstain_reply": Overwrite(None),
+        },
+    )
 
 
 async def run_multi_agent_prepare(
@@ -406,42 +579,62 @@ async def run_multi_agent_prepare(
     system_prompt: str | None = None,
     search_query: str | None = None,
     pre_trace_steps: list[dict] | None = None,
-) -> tuple[str | None, list[dict], str | None, str]:
-    """M6.1 Multi-Agent 预处理：安全分支 / 协调派单 → 专家 → 汇总。"""
+    thread_id: str | None = None,
+) -> tuple[str | None, list[dict], str | None, str, list[str], str]:
+    """M6.1 Multi-Agent 预处理；M6.2 返回 plan_steps 与 thread_id。"""
     trace_id = new_trace_id()
     query = (search_query or message).strip() or message
-    graph = get_multi_agent_graph()
+    tid = (thread_id or "").strip() or new_trace_id()
+    graph = await get_multi_agent_graph()
+    config = graph_config(tid)
+
+    prior = await graph.aget_state(config)
+    history = list((prior.values or {}).get("turn_history") or [])
+    enriched_query = enrich_question_with_history(query, history)
 
     result = await graph.ainvoke(
-        {
-            "question": message,
-            "top_k": top_k,
-            "trace_id": trace_id,
-            "search_query": query,
-            "system_prompt": system_prompt,
-            "trace_steps": [],
-        }
+        _turn_invoke_payload(
+            message=message,
+            top_k=top_k,
+            trace_id=trace_id,
+            search_query=enriched_query,
+            system_prompt=system_prompt,
+        ),
+        config,
     )
 
-    steps = list(pre_trace_steps or []) + (result.get("trace_steps") or [])
+    route = _state_route(result.get("route"))
+    abstain_reply = _state_str(result.get("abstain_reply"))
+    rag_prompt = _state_str(result.get("rag_prompt"))
+    sources = _state_dict_list(result.get("sources"))
+    trace_steps = _state_dict_list(result.get("trace_steps"))
+    plan_steps = _state_str_list(result.get("plan_steps"))
+
+    steps = list(pre_trace_steps or []) + trace_steps
+    if tid:
+        steps = [{"step": "session", "thread_id": tid}] + steps
     save_trace(
         {
             "trace_id": trace_id,
             "question": message,
             "top_k": top_k,
-            "route": result.get("route", "generate"),
+            "route": route,
             "rewrite_count": 0,
             "steps": steps,
-            "abstain_reply": result.get("abstain_reply"),
+            "abstain_reply": abstain_reply,
+            "thread_id": tid,
+            "plan_steps": plan_steps,
         }
     )
 
-    if result.get("route") == "abstain" or result.get("abstain_reply"):
-        return None, [], result.get("abstain_reply"), trace_id
+    if route == "abstain" or abstain_reply:
+        return None, [], abstain_reply, trace_id, plan_steps, tid
 
     return (
-        result.get("rag_prompt"),
-        result.get("sources") or [],
+        rag_prompt,
+        sources,
         None,
         trace_id,
+        plan_steps,
+        tid,
     )

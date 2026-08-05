@@ -25,6 +25,10 @@ class ChatRequest(BaseModel):
         le=10,
         description="检索返回的文档块数量",
     )
+    thread_id: str | None = Field(
+        default=None,
+        description="M6.2：On-call 会话 thread_id，多轮对话共用",
+    )
 
     @model_validator(mode="after")
     def message_or_image(self) -> "ChatRequest":
@@ -52,6 +56,14 @@ class ChatResponse(BaseModel):
     extracted_query: str | None = Field(
         default=None,
         description="M5.3：从截图提取的检索 query（无图时为 null）",
+    )
+    thread_id: str | None = Field(
+        default=None,
+        description="M6.2：会话 thread_id",
+    )
+    plan_steps: list[str] | None = Field(
+        default=None,
+        description="M6.2：排查计划步骤",
     )
 
 
