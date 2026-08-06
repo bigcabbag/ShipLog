@@ -9,6 +9,8 @@ from langchain_core.runnables.config import RunnableConfig
 MAX_TURN_HISTORY = 6
 USER_CONTENT_MAX = 500
 ASSISTANT_CONTENT_MAX = 800
+# generate 层写 turn_history 时 aupdate_state 必须指定 as_node（多节点图否则 Ambiguous update）
+TURN_HISTORY_AS_NODE = "merge"
 
 REFERENTIAL_MARKERS = (
     "刚才",

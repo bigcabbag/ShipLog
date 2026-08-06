@@ -17,6 +17,7 @@ from langgraph.types import Overwrite
 from app.llm import get_llm
 from app.rag.agent_graph import _collect_sources, _summarize_tool_content
 from app.rag.checkpointer import get_async_checkpointer
+from app.rag.session import resolve_thread_id
 from app.rag.session_context import (
     enrich_question_with_history,
     format_turn_history,
@@ -584,7 +585,7 @@ async def run_multi_agent_prepare(
     """M6.1 Multi-Agent 预处理；M6.2 返回 plan_steps 与 thread_id。"""
     trace_id = new_trace_id()
     query = (search_query or message).strip() or message
-    tid = (thread_id or "").strip() or new_trace_id()
+    tid = resolve_thread_id(thread_id)
     graph = await get_multi_agent_graph()
     config = graph_config(tid)
 

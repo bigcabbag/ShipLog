@@ -18,21 +18,24 @@ async def rag_chat(
         image_base64=image_base64,
         image_media_type=image_media_type,
     )
-    rag_prompt, sources, early, trace_id, plan_steps, tid = await run_multi_agent_prepare(
+    tid = resolve_thread_id(thread_id)
+    rag_prompt, sources, early, trace_id, plan_steps, _tid = await run_multi_agent_prepare(
         user_message,
         top_k=top_k,
         system_prompt=system_prompt,
         search_query=retrieval_query,
         pre_trace_steps=pre_steps,
-        thread_id=thread_id,
+        thread_id=tid,
     )
     if early is not None:
-        await record_thread_turn(tid, user=user_message, assistant=early)
+        if early.strip():
+            await record_thread_turn(tid, user=user_message, assistant=early)
         return early, sources, trace_id, extracted, plan_steps, tid
 
     history = await load_thread_history(tid)
     reply = await chat(user_message, system_prompt=rag_prompt, history=history)
-    await record_thread_turn(tid, user=user_message, assistant=reply)
+    if reply.strip():
+        await record_thread_turn(tid, user=user_message, assistant=reply)
     return reply, sources, trace_id, extracted, plan_steps, tid
 
 
@@ -60,12 +63,13 @@ async def prepare_rag_stream_async(
         image_base64=image_base64,
         image_media_type=image_media_type,
     )
-    rag_prompt, sources, early, trace_id, plan_steps, tid = await run_multi_agent_prepare(
+    tid = resolve_thread_id(thread_id)
+    rag_prompt, sources, early, trace_id, plan_steps, _tid = await run_multi_agent_prepare(
         user_message,
         top_k=top_k,
         system_prompt=system_prompt,
         search_query=retrieval_query,
         pre_trace_steps=pre_steps,
-        thread_id=thread_id,
+        thread_id=tid,
     )
     return rag_prompt, sources, early, trace_id, extracted, user_message, plan_steps, tid

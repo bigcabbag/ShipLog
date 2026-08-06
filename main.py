@@ -177,7 +177,14 @@ async def chat_endpoint(body: ChatRequest):
         tid = resolve_thread_id(body.thread_id)
         history = await load_thread_history(tid)
         reply = await chat(body.message, body.system_prompt, history=history)
-        await record_thread_turn(tid, user=body.message, assistant=reply)
+        if reply.strip():
+            try:
+                await record_thread_turn(tid, user=body.message, assistant=reply)
+            except Exception as exc:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"回复已生成，但会话保存失败: {exc}",
+                ) from exc
         return ChatResponse(reply=reply, model=settings["model"], thread_id=tid)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -240,11 +247,17 @@ async def chat_stream_endpoint(body: ChatRequest):
                         }
                     )
                 if early_reply is not None:
-                    await record_thread_turn(
-                        thread_id,
-                        user=stream_user_message,
-                        assistant=early_reply,
-                    )
+                    if early_reply.strip():
+                        try:
+                            await record_thread_turn(
+                                thread_id,
+                                user=stream_user_message,
+                                assistant=early_reply,
+                            )
+                        except Exception as exc:
+                            yield _sse_event(
+                                {"warning": f"回复已生成，但会话保存失败: {exc}"}
+                            )
                     yield _sse_event({"token": early_reply})
                     yield _sse_event(
                         {
@@ -272,11 +285,16 @@ async def chat_stream_endpoint(body: ChatRequest):
 
             reply_text = "".join(full_reply)
             if reply_text.strip():
-                await record_thread_turn(
-                    thread_id,
-                    user=stream_user_message,
-                    assistant=reply_text,
-                )
+                try:
+                    await record_thread_turn(
+                        thread_id,
+                        user=stream_user_message,
+                        assistant=reply_text,
+                    )
+                except Exception as exc:
+                    yield _sse_event(
+                        {"warning": f"回复已生成，但会话保存失败: {exc}"}
+                    )
 
             yield _sse_event(
                 {
