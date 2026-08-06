@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Any
 
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 from pydantic import SecretStr
 
@@ -39,12 +39,35 @@ def get_vision_llm(*, temperature: float = 0) -> ChatOpenAI:
     )
 
 
-async def chat(message: str, system_prompt: str | None = None) -> str:
-    llm = get_llm()
-    messages = []
+def _build_chat_messages(
+    message: str,
+    system_prompt: str | None,
+    history: list[dict] | None,
+) -> list:
+    messages: list = []
     if system_prompt:
         messages.append(SystemMessage(content=system_prompt))
+    for item in history or []:
+        role = str(item.get("role", "")).strip()
+        content = str(item.get("content", "")).strip()
+        if not content:
+            continue
+        if role == "user":
+            messages.append(HumanMessage(content=content))
+        elif role == "assistant":
+            messages.append(AIMessage(content=content))
     messages.append(HumanMessage(content=message))
+    return messages
+
+
+async def chat(
+    message: str,
+    system_prompt: str | None = None,
+    *,
+    history: list[dict] | None = None,
+) -> str:
+    llm = get_llm()
+    messages = _build_chat_messages(message, system_prompt, history)
 
     response = await llm.ainvoke(messages)
     content = response.content
@@ -78,13 +101,15 @@ async def chat_with_image(
     return str(body)
 
 
-async def chat_stream(message: str, system_prompt: str | None = None):
+async def chat_stream(
+    message: str,
+    system_prompt: str | None = None,
+    *,
+    history: list[dict] | None = None,
+):
     """逐 token 生成，供 SSE 流式接口使用。"""
     llm = get_llm()
-    messages = []
-    if system_prompt:
-        messages.append(SystemMessage(content=system_prompt))
-    messages.append(HumanMessage(content=message))
+    messages = _build_chat_messages(message, system_prompt, history)
 
     async for chunk in llm.astream(messages):
         content = chunk.content

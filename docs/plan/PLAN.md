@@ -28,7 +28,7 @@
 - [ ] **M6** Agent 演进 + 交付收尾 ← **进行中** → [M6-steps.md](../steps/M6-steps.md) · [qa-m6.md](../qa/qa-m6.md)
   - [x] M6.0 Tool Calling ✅（三 tool + trace 回放已验收）
   - [x] M6.1 Multi-Agent 分工 + 安全分支 ✅
-  - [x] M6.2 On-call 会话记忆 + 多步规划 ✅（`d4e0bcd`）
+  - [x] M6.2 On-call 会话记忆 + 多步规划 ✅（`d4e0bcd` + 补充：generate 层多轮）
   - [ ] M6.3 README 简历化 + `PITCH.md`（原 M5.3）
   - [ ] M6.4 场景面试 20 题自测（原 M5.5）
 

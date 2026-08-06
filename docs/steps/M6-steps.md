@@ -4,7 +4,7 @@
 > **目标**：ShipLog On-call **Agent** 能力 + README/PITCH/面试自测。  
 > M4/M5 的 CRAG 仍负责**检索质量**；M6.0～M6.2 负责 **Agent**；M6.3～M6.4 负责 **简历交付**。
 
-**当前进度：M6.0 已验收；M6.1 已提交；M6.2 代码完成，待验收。分支 `feature/m6-agent`。**
+**当前进度：M6.0～M6.2 已验收（含 M6.2 补充 generate 多轮）；分支 `feature/m6-agent`。**
 
 ---
 
@@ -147,7 +147,8 @@ flowchart TB
 | 模块 | 作用 |
 |------|------|
 | `app/rag/checkpointer.py` | `AsyncPostgresSaver` 连接 PG，启动时 `setup()` |
-| `app/rag/session.py` | `record_thread_turn` 写入 `turn_history` |
+| `app/rag/session.py` | `record_thread_turn`；**补充** `load_thread_history` / `resolve_thread_id` |
+| `app/llm.py` | **补充** `_build_chat_messages`（generate 多轮 history） |
 | `multi_agent_graph.py` | `planning` 节点；`thread_id` checkpointer；每轮 `Overwrite` 重置 ephemeral 状态 |
 | `schemas` / `main` | `thread_id`、`plan_steps`；SSE 先推 `plan_steps` 再推 token |
 | `frontend` | `localStorage` thread_id；气泡内排查计划；「新会话」；**`chatStorage.ts` 刷新恢复 UI** |
@@ -169,6 +170,7 @@ flowchart TB
 - [x] **Planning node**：拆 2～4 步排查计划
 - [x] 前端：步骤列表 + SSE `plan_steps`
 - [x] 前端：**localStorage 聊天气泡缓存**（刷新后 UI 恢复，方案 A）
+- [x] **补充**：generate 层多轮（后端 `turn_history`，关 RAG 纯 LLM 也续聊）
 
 ### 验收
 
@@ -180,6 +182,36 @@ flowchart TB
 ### 场景题
 
 「Agent 记忆和 RAG 知识库区别？」→ 见 [qa-m6.md](../qa/qa-m6.md) M6.2 章节。
+
+---
+
+## M6.2 补充 · generate 层多轮（后端存 history）
+
+**目标**：**关 RAG = 纯 LLM**，但仍按 `thread_id` 从 checkpointer 读 `turn_history`，最终 generate 能看到最近几轮；**开 RAG** 时 generate 同样拼 history（Agent 推理记忆与生成记忆统一数据源）。
+
+### 实现要点
+
+| 模块 | 作用 |
+|------|------|
+| `session.py` | `load_thread_history` / `resolve_thread_id`；`record_thread_turn` 开/关 RAG 均调用 |
+| `llm.py` | `_build_chat_messages`：System + 历史 Human/AI + 当前 Human |
+| `main.py` | 关 RAG：`chat`/`chat_stream` 带 history；流式统一 `record_thread_turn` |
+| `rag.py` | 最终 `chat(..., history=...)` 再 record |
+
+### 记忆窗口
+
+- `MAX_TURN_HISTORY = 6` 条（约 3 轮 Q&A），超出 **滑动丢弃最旧**（`trim_turn_history`）
+- 前端仍只发 `thread_id` + `message`；localStorage 仅 UI 展示
+
+### 验收
+
+- **关知识库**：「北京天气」→「东城区」能接上上一轮语境（同 thread_id）
+- **开知识库**：多轮 generate 不只有 Agent enrich，最终 LLM 也带 history
+- 第 4 轮后最早一轮从 checkpointer 消失（预期）
+
+### 场景题
+
+「UI 有历史但模型接不上怎么办？」→ 见 [qa-m6.md](../qa/qa-m6.md) M6.2 补充。
 
 ---
 

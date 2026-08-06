@@ -226,6 +226,18 @@
 
 ---
 
+**Q14（M6.2 补充）：** 关知识库时多轮为什么以前接不上？现在怎么做的？
+
+**A：**
+
+1. **现象**：UI 能看到上一轮，但关 RAG 时「东城区」接不上「北京天气」。
+2. **根因（旧）**：关 RAG 只发当前一句给 DeepSeek，且不 `record_thread_turn`。
+3. **做法（补充）**：**后端 authoritative**——`load_thread_history(thread_id)` → `chat/history` 拼 messages → 答完 `record_thread_turn`；关 RAG **仍不走** Multi-Agent。
+4. **窗口**：最近 6 条 message（约 3 轮），超出 `trim_turn_history` 丢最旧。
+5. **本项目**：`session.load_thread_history` + `llm._build_chat_messages` + `main.py` 关 RAG 路径。
+
+---
+
 ### M6.2 自检
 
 - [ ] 两轮同 thread：「payment 502」→「刚才那个还影响谁」（topology 派单 + enrich 生效）
@@ -234,6 +246,7 @@
 - [ ] trace 含 `planning` + `session.thread_id`
 - [ ] 「新会话」后指代 / enrich 重置（预期失效）
 - [ ] **F5 刷新**后聊天气泡仍在（localStorage；截图预览除外）
+- [ ] **关知识库**：「北京天气」→「东城区」同 thread 能续聊（generate 层 history）
 
 ### M6.1 自检
 

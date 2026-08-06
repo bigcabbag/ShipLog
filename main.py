@@ -10,7 +10,7 @@ from app.config import get_embedding_model, get_settings
 from app.llm import chat, chat_stream
 from app.rag.checkpointer import close_async_checkpointer, get_async_checkpointer
 from app.rag.rag import prepare_rag_stream_async, rag_chat
-from app.rag.session import record_thread_turn
+from app.rag.session import load_thread_history, record_thread_turn, resolve_thread_id
 from app.rag.loader import (
     DEFAULT_CHUNK_OVERLAP,
     DEFAULT_CHUNK_SIZE,
@@ -174,8 +174,11 @@ async def chat_endpoint(body: ChatRequest):
 
         if body.image_base64:
             raise HTTPException(status_code=400, detail="截图提问需开启 use_rag")
-        reply = await chat(body.message, body.system_prompt)
-        return ChatResponse(reply=reply, model=settings["model"])
+        tid = resolve_thread_id(body.thread_id)
+        history = await load_thread_history(tid)
+        reply = await chat(body.message, body.system_prompt, history=history)
+        await record_thread_turn(tid, user=body.message, assistant=reply)
+        return ChatResponse(reply=reply, model=settings["model"], thread_id=tid)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except RuntimeError as exc:
@@ -208,7 +211,8 @@ async def chat_stream_endpoint(body: ChatRequest):
 
             stream_user_message = body.message or "请根据截图排查。"
             plan_steps: list[str] = []
-            thread_id: str | None = body.thread_id
+            thread_id = resolve_thread_id(body.thread_id)
+            chat_history = await load_thread_history(thread_id)
 
             if body.use_rag:
                 (
@@ -226,7 +230,7 @@ async def chat_stream_endpoint(body: ChatRequest):
                     system_prompt=body.system_prompt,
                     image_base64=body.image_base64,
                     image_media_type=body.image_media_type,
-                    thread_id=body.thread_id,
+                    thread_id=thread_id,
                 )
                 if plan_steps:
                     yield _sse_event(
@@ -237,7 +241,7 @@ async def chat_stream_endpoint(body: ChatRequest):
                     )
                 if early_reply is not None:
                     await record_thread_turn(
-                        thread_id or "",
+                        thread_id,
                         user=stream_user_message,
                         assistant=early_reply,
                     )
@@ -258,15 +262,20 @@ async def chat_stream_endpoint(body: ChatRequest):
                 sources = raw_sources
 
             full_reply: list[str] = []
-            async for token in chat_stream(stream_user_message, system_prompt=stream_prompt):
+            async for token in chat_stream(
+                stream_user_message,
+                system_prompt=stream_prompt,
+                history=chat_history,
+            ):
                 full_reply.append(token)
                 yield _sse_event({"token": token})
 
-            if body.use_rag and thread_id:
+            reply_text = "".join(full_reply)
+            if reply_text.strip():
                 await record_thread_turn(
                     thread_id,
                     user=stream_user_message,
-                    assistant="".join(full_reply),
+                    assistant=reply_text,
                 )
 
             yield _sse_event(

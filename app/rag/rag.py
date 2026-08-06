@@ -1,7 +1,7 @@
 from app.llm import chat
 from app.rag.multi_agent_graph import run_multi_agent_prepare
 from app.rag.query import resolve_rag_inputs
-from app.rag.session import record_thread_turn
+from app.rag.session import load_thread_history, record_thread_turn, resolve_thread_id
 
 
 async def rag_chat(
@@ -30,7 +30,8 @@ async def rag_chat(
         await record_thread_turn(tid, user=user_message, assistant=early)
         return early, sources, trace_id, extracted, plan_steps, tid
 
-    reply = await chat(user_message, system_prompt=rag_prompt)
+    history = await load_thread_history(tid)
+    reply = await chat(user_message, system_prompt=rag_prompt, history=history)
     await record_thread_turn(tid, user=user_message, assistant=reply)
     return reply, sources, trace_id, extracted, plan_steps, tid
 

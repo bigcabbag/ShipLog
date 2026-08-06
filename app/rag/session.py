@@ -13,6 +13,29 @@ from app.rag.session_context import (
 )
 
 
+def resolve_thread_id(thread_id: str | None) -> str:
+    """空 thread_id 时生成新 id（与 multi_agent 一致）。"""
+    tid = (thread_id or "").strip()
+    if tid:
+        return tid
+    from app.rag.trace import new_trace_id
+
+    return new_trace_id()
+
+
+async def load_thread_history(thread_id: str) -> list[dict]:
+    """从 checkpointer 读取 turn_history（generate 层多轮用）。"""
+    tid = thread_id.strip()
+    if not tid:
+        return []
+    from app.rag.multi_agent_graph import get_multi_agent_graph
+
+    graph = await get_multi_agent_graph()
+    config: RunnableConfig = graph_config(tid)
+    state = await graph.aget_state(config)
+    return list((state.values or {}).get("turn_history") or [])
+
+
 async def record_thread_turn(
     thread_id: str,
     *,
