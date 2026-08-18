@@ -221,34 +221,43 @@ flowchart TB
 
 **目标**：GitHub 首页当简历项目；3 分钟 STAR 讲 ShipLog。
 
-### 要做的事
+### 进度
 
-- 更新 [SCENARIO.md](../scenario/SCENARIO.md)
+- [x] `docs/PITCH.md`：背景 → 方案 → 指标 → 难点（3 分钟口述稿）
+- [ ] `README.md` 简历化（**延后**，用户确认后再做）
+- [ ] 更新 [SCENARIO.md](../scenario/SCENARIO.md) 与 README 链到 PITCH/eval
+
+### 要做的事（README 延后项）
+
 - README：场景、架构图、技术栈、Docker/PG 启动、eval 数字 + Agent 亮点
-- `docs/PITCH.md`：背景 → 方案 → 指标 → 难点
-- 链到 `eval/BASELINE.md`
+- 链到 `eval/BASELINE.md`、`docs/PITCH.md`
 
 ### 验收
 
-- 外人只看 README 知道解决什么问题、怎么跑
-- 能不看稿讲完全链路
+- [x] 能不看稿讲完全链路（PITCH）
+- [ ] 外人只看 README 知道解决什么问题、怎么跑（待 README）
 
 ### 场景题
 
-「用 3 分钟介绍你的 RAG/Agent 项目。」
+「用 3 分钟介绍你的 RAG/Agent 项目。」→ 见 [PITCH.md](../PITCH.md)
 
 ---
 
 ## M6.4 场景面试 20 题
 
-> 原规划 **M5.5**。紧接 M6.3。
+> 原规划 **M5.5**。紧接 PITCH。
 
-**目标**：按 [qa-scenario-guide.md](../qa/qa-scenario-guide.md) + 面经库自测。
+**目标**：按 [qa-scenario-guide.md](../qa/qa-scenario-guide.md) + 面经库自测；**14 场景 + 6 八股**。
 
-### 要做的事
+### 进度
 
-- 更新 `docs/qa/qa-m5.md`；新建或补充 `docs/qa/qa-m6.md`
-- 覆盖：RAG/eval、CRAG、PDF/截图、Tool Calling、Multi-Agent、记忆
+- [x] `docs/qa/qa-m6.md` §M6.4：20 题完整参考答案（含美团/火山引擎类八股）
+- [ ] 用户自测勾选 ≥15/20
+
+### 覆盖范围
+
+- RAG/eval、CRAG、PDF/截图、Tool Calling、Multi-Agent、记忆、Docker 排障
+- 八股：混合检索、overlap、Agentic RAG、ReAct、LangGraph、JSON tool 兜底
 
 ### 验收
 

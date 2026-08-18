@@ -253,3 +253,279 @@
 - [x] 能口述 Multi-Agent 图：safe_check → coordinator → specialists → merge
 - [x] 能解释 safe_response vs abstain 区别
 - [x] 能用 trace 看 agent_dispatch / agent_merge
+
+---
+
+## M6.4 综合自测 20 题（场景 + 八股）
+
+> **用法**：闭卷自答 → 对照参考答案 → 勾选自检。目标 **≥15/20**。  
+> **八股**（Q15～Q20）来自美团/字节类 Agent 面经 + 火山引擎 RAG+Agent 题单；**场景题**覆盖 M4～M6 全链路。  
+> 口述稿见 [PITCH.md](../PITCH.md)。
+
+### 自测记录
+
+| # | 题型 | 题目摘要 | 自评 |
+|---|------|----------|------|
+| 1 | 场景 | 召回率多少、怎么量的 | ☐ |
+| 2 | 场景 | 答错了从哪层查 | ☐ |
+| 3 | 场景 | Retrieve vs Generate | ☐ |
+| 4 | 场景 | CRAG 幻觉 17.2%→11.5% trade-off | ☐ |
+| 5 | 场景 | 混合检索为什么、何时无效 | ☐ |
+| 6 | 场景 | PDF/截图进 RAG 链路 | ☐ |
+| 7 | 场景 | 三 tool 怎么拆 | ☐ |
+| 8 | 场景 | 专家结论冲突 | ☐ |
+| 9 | 场景 | FLUSHALL 安全分支 | ☐ |
+| 10 | 场景 | 会话记忆 vs 知识库 | ☐ |
+| 11 | 场景 | planning vs coordinator | ☐ |
+| 12 | 场景 | trace 回放排障 | ☐ |
+| 13 | 场景 | Docker 前端 502 | ☐ |
+| 14 | 场景 | 流式 + 会话保存失败 | ☐ |
+| 15 | 八股 | 向量 vs 关键词检索 | ☐ |
+| 16 | 八股 | Chunk overlap | ☐ |
+| 17 | 八股 | RAG vs Agentic RAG | ☐ |
+| 18 | 八股 | ReAct 原理 | ☐ |
+| 19 | 八股 | LangGraph vs Chain | ☐ |
+| 20 | 八股 | JSON tool 调用兜底 | ☐ |
+
+---
+
+### 场景题（Q1～Q14）
+
+**Q1：** 你做了三个月 RAG，召回率多少？怎么量的？
+
+**A：**
+
+1. **指标**：ShipLog **38 题 scored**，**Recall@3 = 86.8%**，MRR ≈ 0.855（见 `eval/BASELINE.md`）。
+2. **方法**：`eval/questions.json` 标注期望来源文件；`eval/run_eval.py` 只评检索层，不调 LLM。
+3. **Miss 解释**：5 道是知识库**故意不覆盖**的 On-call 场景（Prometheus、NetworkPolicy 等），用于测拒答，不算检索失败。
+4. **更好方案**：上线后 RAGAS context_recall + bad case 回流 eval。
+5. **本项目**：M4.1 建 eval；M5.2 换 ShipLog 题库。
+
+---
+
+**Q2：** 用户说「AI 答错了」，你从哪开始查？
+
+**A：**
+
+| 层 | 查什么 | 本项目 |
+|----|--------|--------|
+| Query | 太模糊？需改写？ | CRAG rewrite；M6 enrich 指代 |
+| Retrieve | Top-K 片段相关吗？ | 看 `sources`；`run_eval.py` |
+| Chunk | 语义被切断？ | `loader.py` chunk_size/overlap |
+| Generate | 上下文对仍胡说？ | On-call prompt；CRAG grade |
+| Agent | 选错 tool？ | `GET /traces/{id}` tool_name |
+
+**步骤**：先分 Retrieve vs Generate（gold chunk 在不在 Top-K），再动刀；别一上来换模型。
+
+---
+
+**Q3：** 怎么判断是检索问题还是生成问题？
+
+**A：**
+
+1. **Retrieve 问题**：期望文档块**不在** Top-K → 查 embedding、切块、混合检索、索引是否过期。
+2. **Generate 问题**：正确块**在** Top-K 但答案错/编造 → 查 prompt、temperature、CRAG、是否缺 citation。
+3. **工具**：手工读 Top-3 最快；离线 RAGAS。
+4. **本项目**：M4.1 eval 看 retrieve 命中；M4.2 CRAG 低分则 rewrite 重检。
+
+---
+
+**Q4：** CRAG 把幻觉率从 17.2% 降到 11.5%，为什么误拒答率反而升到 21.2%？
+
+**A：**
+
+1. **现象**：生成层 eval 三组对比，CRAG 降幻觉但 availability 下降。
+2. **根因**：`grade` 节点偏严，相关文档被判不相关 → 该答的也拒了。
+3. **trade-off**：On-call **宁可误拒也不编造 kubectl 命令**。
+4. **更好方案**：调 grade 阈值；加 Rerank 提升 Retrieve 质量后再 grade；分「必须拒答」与「可尝试回答」两类题。
+5. **本项目**：`eval/BASELINE.md` 生成层表；`graph.py` CRAG 节点。
+
+---
+
+**Q5：** 向量检索和关键词检索各适合什么？你为什么做混合检索？
+
+**A：**
+
+1. **向量**：语义相似、换说法也能命中（「Redis 超时」≈「连接 timed out」）。
+2. **关键词（BM25）**：专有名词、告警码、命令精确匹配（`OOMKilled`、`FLUSHALL`）。
+3. **混合 RRF**：两路排名融合，互补；DevKit 库小曾 94.4% 持平，ShipLog 86.8% 也与纯向量持平但工程上为扩库做准备。
+4. **本项目**：`app/rag/retrieval.py` RRF；M4.3。
+
+---
+
+**Q6：** 用户贴告警截图，系统怎么处理？
+
+**A：**
+
+1. **链路**：前端 base64 → `vision.py` DeepSeek 读图 → 提取文本 query → 走 RAG/Agent（与文本问同一套）。
+2. **现象**：trace 可有 `vision_extract`；检索仍走 `search_runbook` 等 tool。
+3. **注意**：截图预览不持久化 localStorage（体积）；文字标记「附带告警截图」保留。
+4. **本项目**：M5.3；`resolve_rag_inputs`。
+
+---
+
+**Q7：** 为什么拆三个 tool，不是一个 RAG 查全部？
+
+**A：**（详见 M6.0 Q3）
+
+1. **数据形态**：Runbook 非结构化；incident/topology 结构化 SQL。
+2. **召回方式**：文档 RRF+CRAG；拓扑 `depends_on` 精确查。
+3. **Agent 稳定性**：单 tool 参数易混，协调者 JSON 派单更清晰。
+4. **本项目**：`app/tools.py` 三 StructuredTool。
+
+---
+
+**Q8：** Runbook 专家说查日志，Incident 专家说上次直接回滚，怎么汇总？
+
+**A：**（详见 M6.1 Q5）
+
+1. **优先级**：Runbook SOP + topology 结构化数据为准；事故记录是**历史背景**不是本次定论。
+2. **排查**：trace `agent_dispatch` / `agent_result`。
+3. **本项目**：`MERGE_PROMPT` 第 2 条。
+
+---
+
+**Q9：** 「生产 Redis 能 FLUSHALL 吗」怎么答？
+
+**A：**（详见 M6.1 Q6）
+
+1. **走 safe_response**：明确不能 + 风险 + 审批 + 替代方案；**不是** abstain。
+2. **例外**：「FLUSHALL 事故怎么发生的」→ 历史题，派 incident。
+3. **本项目**：`needs_safe_branch()` + `HISTORICAL_MARKERS`。
+
+---
+
+**Q10：** Agent 会话记忆和 RAG 知识库有什么区别？
+
+**A：**（详见 M6.2 Q9）
+
+1. **知识库**：静态文档 + PG 表，跨用户共享。
+2. **turn_history**：同 thread 对话轮次，用于指代 enrich + generate 多轮。
+3. **localStorage**：仅 UI 刷新，非权威。
+4. **原则**：事实仍从 tool 查，别把旧回答当真相。
+
+---
+
+**Q11：** planning 和 coordinator 为什么要分两节点？
+
+**A：**（详见 M6.2 Q10）
+
+1. **planning**：`plan_steps` 给人看 + 给协调者上下文。
+2. **coordinator**：可执行 `tasks` JSON 派单。
+3. **fast-path**：首轮简单问跳过 Planning LLM，trace `planning_skipped: true`。
+
+---
+
+**Q12：** 线上用户说回答不对，你只有 trace_id，怎么排障？
+
+**A：**
+
+1. `GET /traces/{trace_id}` 看 `steps` 顺序。
+2. 有 `safe_check` / `safe_response`？→ 策略题。
+3. 有 `planning` / `agent_dispatch` / `agent_result`？→ 派单与专家结果。
+4. 有 `tool_start`？→ M6.0 单 Agent 路径。
+5. 看 `route`、`abstain_reply`、`plan_steps`、`thread_id`。
+6. **本项目**：`app/rag/trace.py` + PG `rag_traces`。
+
+---
+
+**Q13：** Docker 部署后浏览器 502，Swagger 直连 8032 正常，怎么查？
+
+**A：**
+
+1. **现象**：仅经 frontend nginx 失败。
+2. **根因**：`VITE_API_BASE_URL` 构建成 `http://backend:8000` 浏览器解析不了；或 nginx upstream 未就绪。
+3. **排查**：`docker compose logs frontend`；Network 看请求 URL；`curl localhost:8032/health`。
+4. **修复**：生产构建 `VITE_API_BASE_URL: ""` 同源反代。
+5. **本项目**：`docker-compose.yml`；见 `qa-m5.md`。
+
+---
+
+**Q14：** SSE 流式已出完整回答，却报「调用 DeepSeek 失败」，可能是什么？
+
+**A：**
+
+1. **现象**：token 都推完了才报错。
+2. **根因**：生成成功，**之后** `record_thread_turn` 写 checkpointer 失败（如 LangGraph `Ambiguous update, specify as_node`）。
+3. **排查**：看 SSE 最后一帧是 `error` 还是 `warning`；后端日志 `record_thread_turn`。
+4. **修复**：`aupdate_state(..., as_node="merge")`；保存失败单独 `warning` 不误报 LLM。
+5. **本项目**：M6.2 补充；`session.py`。
+
+---
+
+### 基础八股（Q15～Q20）
+
+> 答法：**定义 → 为什么需要 → 本项目怎么落地（有则说）**
+
+**Q15：** 向量检索和关键词检索各适合什么场景？为什么现在混合检索更多？
+
+**A：**
+
+1. **向量**：语义泛化、同义改写、自然语言问法；弱点是稀有词、ID、命令拼写。
+2. **关键词**：精确 token、告警码、API 名；弱点是换一种说法就 miss。
+3. **混合**：工业界默认 **召回互补**；融合常用 RRF，避免只信一路。
+4. **本项目**：BM25 + pgvector/Chroma → RRF（M4.3）。
+
+---
+
+**Q16：** 文档切片为什么要 Chunk Overlap？解决什么问题？
+
+**A：**
+
+1. **问题**：固定窗口切块会在 **段落/步骤边界** 切断，答案跨两块时 Retrieve 只命中一半。
+2. **Overlap**：相邻块共享尾部/头部，提高边界语义完整性。
+3. **代价**：存储增多、索引冗余，需调 `chunk_size` / `overlap`。
+4. **本项目**：`loader.py` 默认 chunk_size=500、overlap 可配；eval 可对比调参。
+
+---
+
+**Q17：** 传统 RAG 和 Agentic RAG 本质区别是什么？
+
+**A：**
+
+1. **传统 RAG**：固定链路 query → retrieve → generate，无自主决策。
+2. **Agentic RAG**：LLM/图 **决定是否检索、检索几次、何时改写 query、何时拒答**；可接多数据源 tool。
+3. **框架**：LangGraph 用 State + 条件边实现 CRAG 循环、Agent 派单。
+4. **本项目**：M4.2 CRAG 图；M6 Multi-Agent + 三 tool = Agentic RAG 落地。
+
+---
+
+**Q18：** ReAct 原理是什么？和单轮问答最本质区别？
+
+**A：**
+
+1. **ReAct**：**Reasoning + Acting** 交替——模型输出思考 + 调 tool + 读 observation + 再思考，多步直到能答。
+2. **单轮**：一次 prompt 一次 completion，无工具反馈环。
+3. **区别**：有无 **环境反馈**（tool 结果）和 **多步循环**。
+4. **本项目**：M6.0 `agent_graph` tool 节点循环；M6.1 改为协调者派单（仍是多步，但分工更结构化）。
+
+---
+
+**Q19：** 为什么用 LangGraph，而不是普通 LangChain Chain？
+
+**A：**
+
+1. **Chain**：线性 DAG，难表达 **循环**（CRAG 重写再检）、**条件分支**（safe_check）、**多 Agent 汇合**。
+2. **LangGraph**：显式 **State**、节点、条件边；支持 checkpointer **持久化状态**；适合生产 Agent。
+3. **面试句**：「Chain 适合一次性管道；Agent 要循环、分支、记忆就用图。」
+4. **本项目**：`graph.py` CRAG；`multi_agent_graph.py` M6.1～M6.2。
+
+---
+
+**Q20：** 怎么保证 LLM 稳定输出 JSON 调工具？格式错了怎么兜底？
+
+**A：**
+
+1. **手段**：Pydantic `args_schema` + StructuredTool；system prompt 约束；**structured output** / function calling（模型支持时）。
+2. **兜底**：正则/括号抽取 JSON（`_extract_json_object`）；解析失败 **重试 1 次**；仍失败 fallback（如默认派 runbook 专家）。
+3. **限流**：`MAX_TOOL_ROUNDS` 防死循环。
+4. **本项目**：`app/tools.py` + `agent_graph._agent_node`；`multi_agent_graph._coordinator_node` fallback。
+
+---
+
+### M6.4 自检
+
+- [ ] 20 题自测 **≥15/20**（场景题能讲排查步骤，八股能连本项目）
+- [ ] 能 **3 分钟** 讲完 [PITCH.md](../PITCH.md) 不看稿
+- [ ] 白板能画：用户 → Agent → 三 tool → CRAG → trace
+- [ ] 能报两个数字：**Recall@3 86.8%**、**幻觉率 17.2%→11.5%**
