@@ -301,11 +301,14 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
           >
             <p className="chat-bubble__role">{msg.role === "user" ? "你" : "AI"}</p>
             {msg.planSteps && msg.planSteps.length > 0 && !msg.error && (
-              <ol className="chat-bubble__plan">
-                {msg.planSteps.map((step, i) => (
-                  <li key={`${msg.id}-plan-${i}`}>{step}</li>
-                ))}
-              </ol>
+              <div className="chat-bubble__plan-wrap">
+                <p className="chat-bubble__plan-label">排查计划</p>
+                <ol className="chat-bubble__plan">
+                  {msg.planSteps.map((step, i) => (
+                    <li key={`${msg.id}-plan-${i}`}>{step}</li>
+                  ))}
+                </ol>
+              </div>
             )}
             {msg.imagePreview && (
               <img
