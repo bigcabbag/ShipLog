@@ -4,7 +4,7 @@
 > **目标**：ShipLog On-call **Agent** 能力 + README/PITCH/面试自测。  
 > M4/M5 的 CRAG 仍负责**检索质量**；M6.0～M6.2 负责 **Agent**；M6.3～M6.4 负责 **简历交付**。
 
-**当前进度：M6.0～M6.2 已验收（含 M6.2 补充 generate 多轮）；分支 `feature/m6-agent`。**
+**当前进度：M6.0～M6.2 已验收；M6.25 Reranker（U-001）本步；M6.3 PITCH 已有 / README 延后；M6.4 自测中。分支 `feature/m6-agent`。**
 
 ---
 
@@ -15,22 +15,24 @@ flowchart LR
   M53[M5.3 PDF+截图] --> M60[M6.0 Tool Calling]
   M60 --> M61[M6.1 Multi-Agent]
   M61 --> M62[M6.2 记忆与规划]
-  M62 --> M63[M6.3 README+PITCH]
+  M62 --> M625[M6.25 Reranker U-001]
+  M625 --> M63[M6.3 README+PITCH]
   M63 --> M64[M6.4 面试 20 题]
 ```
 
-| 子步 | 做什么 | 改动范围 | 场景题重点 |
-|------|--------|----------|-----------|
-| M6.0 | Tool Calling | `tools.py`、`graph.py`、SSE | 「Runbook vs 事故库 vs 拓扑」 |
-| M6.1 | Multi-Agent 分工 | LangGraph 多 Agent + 安全分支 | 「多路结果冲突怎么汇总」 |
-| M6.2 | 会话记忆 + 多步规划 | checkpointer、planning node | 「会话记忆 vs 知识库」 |
-| M6.3 | README 简历化 + `PITCH.md` | `README.md`、`docs/PITCH.md` | 「3 分钟介绍 ShipLog」 |
-| M6.4 | 场景面试 20 题自测 | `qa-m5.md` / `qa-m6.md` | 场景题 ≥15/20 |
+| 子步 | 做什么 | 改动范围 | 场景题重点 | 状态 |
+|------|--------|----------|-----------|------|
+| M6.0 | Tool Calling | `tools.py`、`agent_graph.py`、SSE | 「Runbook vs 事故库 vs 拓扑」 | ✅ |
+| M6.1 | Multi-Agent 分工 | LangGraph 多 Agent + 安全分支 | 「多路结果冲突怎么汇总」 | ✅ |
+| M6.2 | 会话记忆 + 多步规划 | checkpointer、planning node | 「会话记忆 vs 知识库」 | ✅ |
+| **M6.25** | **Reranker 二阶段重排（U-001）** | `reranker.py`、`retriever.py`、eval | 「RRF 之后为什么还要 Rerank」 | **本步** |
+| M6.3 | README 简历化 + `PITCH.md` | `README.md`、`docs/PITCH.md` | 「3 分钟介绍 ShipLog」 | PITCH ✅ / README 延后 |
+| M6.4 | 场景面试 20 题自测 | `qa-m6.md` | 场景题 ≥15/20 | 进行中 |
 
-> **编号说明**（原 M5 后半并入 M6）：  
-> - 原 **M5.4** → 现 **M5.3**（PDF + 截图，M5 最后一步）  
-> - 原 **M5.3** → 现 **M6.3**（README + PITCH）  
-> - 原 **M5.5** → 现 **M6.4**（面试自测）
+> **编号说明**：  
+> - 原 M5 后半并入 M6：原 M5.4→M5.3，原 M5.3→M6.3，原 M5.5→M6.4  
+> - **M6.25** 插在 Agent 能力（6.0～6.2）与交付（6.3～6.4）之间：检索精排服务 `search_runbook` / CRAG，写进简历前先有数字对比  
+> - 面经 backlog：U-001 = M6.25；U-002 Faithfulness 轻量包装另排；U-003/U-004 见 backlog 状态
 
 ---
 
@@ -215,6 +217,66 @@ flowchart TB
 
 ---
 
+## M6.25 Reranker 二阶段重排（U-001）
+
+**目标**：在 BM25+向量 **RRF 粗排**之后加 **CrossEncoder 精排**，对齐面经「二阶段检索」；服务 CRAG / `search_runbook`。
+
+**对应 backlog**：[U-001](../interview/upgrades/backlog.md) · 面经 §4.1 Reranker
+
+### 链路
+
+```text
+query
+  → 向量 Top-N + BM25 Top-N
+  → RRF 融合取 pool（默认 20）
+  → bge-reranker-base 打分排序
+  → 截断 Top-K（默认 3）→ CRAG grade / LLM
+```
+
+### 实现要点
+
+| 模块 | 作用 |
+|------|------|
+| `app/rag/reranker.py` | `CrossEncoder` 懒加载；`rerank_documents(query, docs, top_k)` |
+| `app/rag/retriever.py` | `retrieve(..., use_rerank=)`；开启时粗排池 → 精排 |
+| `app/config.py` | `RERANK_ENABLED`（默认 `1`）、`RERANK_MODEL`、`RERANK_POOL` |
+| `eval/run_eval.py` | `--rerank` 对比有无精排的 Recall@3 / MRR |
+| `tests/test_reranker.py` | mock CrossEncoder 单测（不下载模型） |
+
+### 环境变量
+
+| 变量 | 默认 | 说明 |
+|------|------|------|
+| `RERANK_ENABLED` | `1` | 设 `0` 关闭（仅 RRF） |
+| `RERANK_MODEL` | `BAAI/bge-reranker-base` | CrossEncoder 模型 |
+| `RERANK_POOL` | `20` | 粗排候选数 |
+
+首次启用会经 HF 镜像下载模型；CPU 上全量 38 题 eval 可能较慢，可先冒烟。
+
+### 验收
+
+```powershell
+cd E:\01_Dev\langChain
+.venv\Scripts\python.exe -m unittest tests.test_reranker -v
+uv run python eval/run_eval.py --no-file
+uv run python eval/run_eval.py --rerank --no-file
+```
+
+- 单测通过  
+- `--rerank` 报告写入 `eval/retrieval_eval_result_rerank.md`（或 `--no-file` 只打控制台）  
+- `BASELINE.md` 记录有/无 Rerank 一行（库小可能 Recall 持平，仍可讲二阶段架构）  
+- 口述：「RRF 是多路粗排；CrossEncoder 看 query-doc 对，精排 Top-K」
+
+### 场景题
+
+1. 「混合检索已经 RRF 了，为什么还要 Reranker？」  
+2. 「换 Rerank 模型要不要重跑 embedding 索引？」  
+3. 「CPU 上 Rerank 太慢怎么办？」
+
+→ 参考答案写入 [qa-m6.md](../qa/qa-m6.md) §M6.25。
+
+---
+
 ## M6.3 README 简历化 + PITCH
 
 > 原规划 **M5.3**。M6.0～M6.2 完成后写，叙事覆盖 **RAG → CRAG → PDF/截图 → Agent** 全链路。
@@ -282,10 +344,12 @@ flowchart TB
 |----|------|
 | CLIP / 端到端多模态向量 | backlog U-009 |
 | MCP 协议 | backlog U-005 |
+| 完整 RAGAS 包（U-002 正统版） | 先用 gen_eval 幻觉率对齐 faithfulness 口径 |
 
 ---
 
 ## 下一步
 
-先完成 **M5.3**（PDF + 截图）→ 说 **「继续 M6.0」**。  
-M6.2 后 → **M6.3** README → **M6.4** 面试自测。
+**当前**：验收 **M6.25**（单测 + `--rerank` eval）→ 更新 BASELINE。  
+之后：自测 **M6.4** → 口述 PITCH → 「继续 M6.3 README」。  
+U-002 轻量 faithfulness 包装可插在 M6.25 之后、README 之前。

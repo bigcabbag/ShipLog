@@ -256,6 +256,57 @@
 
 ---
 
+## M6.25 Reranker（U-001）
+
+### 概念
+
+**Q：RRF 之后为什么还要 CrossEncoder Rerank？**
+
+**A：**
+
+- **RRF**：多路召回（向量语义 + BM25 关键词）按排名融合，**不看 query-doc 文本对**，便宜、可扩池。
+- **CrossEncoder**：把 `(query, chunk)` 拼在一起过 Transformer，打相关性分，**精排更准**、更贵。
+- 常见流水线：**粗排多取（pool=20）→ 精排截断 Top-3** → 再进 CRAG/LLM。
+- **本项目**：`retriever.retrieve` → `reranker.rerank_documents`；模型默认 `BAAI/bge-reranker-base`。
+
+### 场景题（M6.25）
+
+**Q1：** 混合检索已经 RRF 了，为什么还要 Reranker？
+
+**A：**
+
+1. **现象**：Top-3 里有关键词撞上的无关块，或语义相关但排序靠后。
+2. **根因**：RRF 只融合「名次」，不直接建模 query 与段落是否匹配。
+3. **排查**：对比 `eval/run_eval.py` 与 `--rerank` 的 MRR / 单题 rank。
+4. **更好方案**：库更大时收益更明显；可再上专领域微调 reranker。
+5. **本项目**：M6.25；`RERANK_ENABLED` / `RERANK_POOL`；单测 mock CrossEncoder。
+
+**Q2：** 换 Rerank 模型要不要重跑 embedding 索引？
+
+**A：**
+
+1. **不用重跑向量库**：Rerank 在检索后打分，不写入 pgvector。
+2. **要重跑的是**：换 **embedding** 模型时必须全量 re-index + Recall（见 §4.6 A10）。
+3. **口述**：Rerank 换模型只影响在线打分延迟与排序；eval 用 `--rerank` 对比即可。
+
+**Q3：** CPU 上 Rerank 太慢怎么办？
+
+**A：**
+
+1. 减小 `RERANK_POOL`（20→10）；或 `RERANK_ENABLED=0` 仅 RRF。
+2. 换更小 cross-encoder；或异步预热模型（启动时 load）。
+3. 生产可 GPU / 独立 rerank 服务。
+4. **本项目**：懒加载 `get_cross_encoder()`；首次请求会下载模型。
+
+### M6.25 自检
+
+- [ ] `python -m unittest tests.test_reranker -v` 通过
+- [ ] `uv run python eval/run_eval.py --rerank --no-file` 能出 Recall/MRR
+- [ ] 能口述：粗排 RRF → 精排 CrossEncoder → Top-K
+- [ ] 知道换 embed 要 re-index，换 rerank 不用
+
+---
+
 ## M6.4 综合自测 20 题（场景 + 八股）
 
 > **用法**：闭卷自答 → 对照参考答案 → 勾选自检。目标 **≥15/20**。  

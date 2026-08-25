@@ -22,6 +22,27 @@ def get_embedding_model() -> str:
 
 
 @lru_cache
+def is_rerank_enabled() -> bool:
+    """M6.25：默认开启二阶段 Rerank；设 RERANK_ENABLED=0 可关闭。"""
+    raw = os.getenv("RERANK_ENABLED", "1").strip().lower()
+    return raw not in {"0", "false", "no", "off"}
+
+
+@lru_cache
+def get_rerank_model() -> str:
+    return os.getenv("RERANK_MODEL", "BAAI/bge-reranker-base").strip()
+
+
+@lru_cache
+def get_rerank_pool() -> int:
+    """RRF/向量粗排池大小，再交给 CrossEncoder 截断到最终 top_k。"""
+    try:
+        return max(1, int(os.getenv("RERANK_POOL", "20").strip() or "20"))
+    except ValueError:
+        return 20
+
+
+@lru_cache
 def get_database_url() -> str:
     """M5.1：PostgreSQL 连接串（Docker 由 compose 注入，本地开发可在 .env 配置）。"""
     url = os.getenv("DATABASE_URL", "").strip()

@@ -4,6 +4,7 @@
     uv run python eval/run_eval.py
     uv run python eval/run_eval.py --top-k 5
     uv run python eval/run_eval.py --dense-only   # 纯向量对比
+    uv run python eval/run_eval.py --rerank       # M6.25：RRF + CrossEncoder
     uv run python eval/run_eval.py --output eval/retrieval_eval_result.md
 """
 
@@ -48,13 +49,24 @@ def load_questions() -> list[dict]:
     return data
 
 
-def eval_one(item: dict, top_k: int, *, dense_only: bool = False) -> EvalRow:
+def eval_one(
+    item: dict,
+    top_k: int,
+    *,
+    dense_only: bool = False,
+    use_rerank: bool = False,
+) -> EvalRow:
     qid = str(item["id"])
     question = str(item["question"])
     expected = list(item.get("expected_sources") or [])
     should_abstain = bool(item.get("should_abstain", False))
 
-    docs = retrieve(question, top_k=top_k, hybrid=not dense_only)
+    docs = retrieve(
+        question,
+        top_k=top_k,
+        hybrid=not dense_only,
+        use_rerank=use_rerank,
+    )
     retrieved = [str(d.metadata.get("source", "")) for d in docs]
 
     first_rank: int | None = None
@@ -116,6 +128,11 @@ def main() -> None:
         help="仅向量检索（对比纯向量基线）",
     )
     parser.add_argument(
+        "--rerank",
+        action="store_true",
+        help="M6.25：RRF/向量粗排后 CrossEncoder 精排",
+    )
+    parser.add_argument(
         "--output",
         type=Path,
         default=DEFAULT_OUTPUT,
@@ -140,9 +157,24 @@ def main() -> None:
         sys.exit(1)
 
     questions = load_questions()
-    rows = [eval_one(q, top_k=args.top_k, dense_only=args.dense_only) for q in questions]
+    rows = [
+        eval_one(
+            q,
+            top_k=args.top_k,
+            dense_only=args.dense_only,
+            use_rerank=args.rerank,
+        )
+        for q in questions
+    ]
 
-    mode = "dense-only" if args.dense_only else "hybrid (BM25+vector RRF)"
+    if args.dense_only and args.rerank:
+        mode = "dense + CrossEncoder rerank"
+    elif args.dense_only:
+        mode = "dense-only"
+    elif args.rerank:
+        mode = "hybrid RRF + CrossEncoder rerank"
+    else:
+        mode = "hybrid (BM25+vector RRF)"
 
     scored = [r for r in rows if r.expected_sources]
     abstain = [r for r in rows if not r.expected_sources]
@@ -183,9 +215,14 @@ def main() -> None:
         )
 
     if not args.no_file:
-        suffix = "_dense" if args.dense_only else ""
+        suffix_parts: list[str] = []
+        if args.dense_only:
+            suffix_parts.append("dense")
+        if args.rerank:
+            suffix_parts.append("rerank")
+        suffix = ("_" + "_".join(suffix_parts)) if suffix_parts else ""
         output = args.output
-        if output == DEFAULT_OUTPUT and args.dense_only:
+        if output == DEFAULT_OUTPUT and suffix:
             output = DEFAULT_OUTPUT.with_name(f"retrieval_eval_result{suffix}.md")
         output.parent.mkdir(parents=True, exist_ok=True)
         md = format_retrieval_report(

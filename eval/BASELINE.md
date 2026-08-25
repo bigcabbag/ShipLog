@@ -9,8 +9,9 @@
 ```powershell
 cd E:\01_Dev\langChain
 # 检索层
-uv run python eval/run_eval.py              # 混合检索 → eval/retrieval_eval_result.md
-uv run python eval/run_eval.py --dense-only # 纯向量 → eval/retrieval_eval_result_dense.md
+uv run python eval/run_eval.py              # 混合检索（评测强制关 Rerank）→ retrieval_eval_result.md
+uv run python eval/run_eval.py --dense-only # 纯向量 → retrieval_eval_result_dense.md
+uv run python eval/run_eval.py --rerank     # M6.25：RRF + CrossEncoder → retrieval_eval_result_rerank.md
 uv run python eval/run_eval.py --top-k 5
 
 # 生成层（需 .env 有 DEEPSEEK_API_KEY，约 18 分钟）→ eval/gen_eval_result.md
@@ -43,6 +44,7 @@ uv run python eval/run_gen_eval.py --limit 5  # 快速测试
 | M4.3 混合检索 RRF（DevKit 18题） | 3 | **94.4%** | — | — | 与 M4.1 持平 | 2026-07-21 |
 | M5.2 纯向量（ShipLog 38题） | 3 | **86.8%** | 51.8% | 0.855 | vector_count=44，10 篇 kb | 2026-07-29 |
 | M5.2 混合检索 RRF（ShipLog 38题） | 3 | **86.8%** | 52.6% | 0.855 | 与纯向量持平（库小） | 2026-07-29 |
+| M6.25 RRF + Rerank（ShipLog 38题） | 3 | （跑 `--rerank` 后填） | — | — | `bge-reranker-base`，pool=20 | 2026-08-25 |
 
 ### M4.1 已知 Miss（DevKit 阶段）
 

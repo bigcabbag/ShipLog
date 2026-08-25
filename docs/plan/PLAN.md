@@ -29,6 +29,7 @@
   - [x] M6.0 Tool Calling ✅（三 tool + trace 回放已验收）
   - [x] M6.1 Multi-Agent 分工 + 安全分支 ✅
   - [x] M6.2 On-call 会话记忆 + 多步规划 ✅（`d4e0bcd` + 补充：generate 层多轮）
+  - [x] **M6.25 Reranker 二阶段重排（U-001）** ✅（RRF pool → bge-reranker → Top-K）
   - [x] M6.3 `docs/PITCH.md` 3 分钟口述稿 ✅（README 简历化 **延后**）
   - [ ] M6.4 场景面试 20 题自测（`qa-m6.md` §M6.4，目标 ≥15/20）
   - [x] 前端质感升级：plan 时间线 + 对比加深 + 主/侧栏分层（保留秋色暖风）
@@ -37,7 +38,7 @@
 **面试题规则**：每步出**场景题**（面经驱动），见 [qa-scenario-guide.md](../qa/qa-scenario-guide.md)  
 **秋招面经库**（外部面经收集 + 项目映射 + 升级 backlog）：[interview/README.md](../interview/README.md)
 
-**下一步**：自测 [qa-m6.md](../qa/qa-m6.md) **M6.4 二十题**（≥15/20）→ 口述 [PITCH.md](../PITCH.md) → 再说 **「继续 M6.3 README」** 做简历化
+**下一步**：验收 M6.25（`--rerank` eval 写入 BASELINE）→ 自测 [qa-m6.md](../qa/qa-m6.md) **M6.4** → 口述 [PITCH.md](../PITCH.md) → 「继续 M6.3 README」
 
 ## 协作方式：PR 流程（从 M3 起）
 
