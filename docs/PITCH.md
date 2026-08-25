@@ -59,7 +59,7 @@ On-call 值班时，工程师要在几分钟内判断：**先查什么、以前�
 
 **检索层**（ShipLog 38 题 scored）：**Recall@3 = 86.8%**，MRR ≈ 0.855（5 道 miss 是知识库故意不覆盖的场景，用于测拒答）。
 
-**生成层**（33 题对比实验）：完整 **CRAG + On-call prompt** 把幻觉率从 **17.2% 降到 11.5%**；代价是误拒答率升到 21.2%——On-call 场景我接受 **宁可少说也不编造命令**。
+**生成层**（33 题对比实验）：完整 **CRAG + On-call prompt** 把幻觉率从 **17.2% 降到 11.5%**（答案级 faithfulness ≈82.8%→**88.5%**，口径对齐 RAGAS faithfulness、自建 LLM-judge）；代价是误拒答率升到 21.2%——On-call 场景我接受 **宁可少说也不编造命令**。
 
 **工程交付**：`docker compose up` 起 postgres + backend + frontend；`GET /traces/{id}` 可回放 planning、派单、tool、安全分支。
 

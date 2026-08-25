@@ -4,7 +4,7 @@
 > **目标**：ShipLog On-call **Agent** 能力 + README/PITCH/面试自测。  
 > M4/M5 的 CRAG 仍负责**检索质量**；M6.0～M6.2 负责 **Agent**；M6.3～M6.4 负责 **简历交付**。
 
-**当前进度：M6.0～M6.2 已验收；M6.25 Reranker（U-001）本步；M6.3 PITCH 已有 / README 延后；M6.4 自测中。分支 `feature/m6-agent`。**
+**当前进度：M6.0～M6.2 已验收；M6.25 Reranker（U-001）✅；M6.26 faithfulness 口径（U-002 轻量）✅；M6.3 PITCH 已有 / README 延后；M6.4 自测中。分支 `feature/m6-agent`。**
 
 ---
 
@@ -16,7 +16,8 @@ flowchart LR
   M60 --> M61[M6.1 Multi-Agent]
   M61 --> M62[M6.2 记忆与规划]
   M62 --> M625[M6.25 Reranker U-001]
-  M625 --> M63[M6.3 README+PITCH]
+  M625 --> M626[M6.26 Faithfulness U-002]
+  M626 --> M63[M6.3 README+PITCH]
   M63 --> M64[M6.4 面试 20 题]
 ```
 
@@ -25,14 +26,15 @@ flowchart LR
 | M6.0 | Tool Calling | `tools.py`、`agent_graph.py`、SSE | 「Runbook vs 事故库 vs 拓扑」 | ✅ |
 | M6.1 | Multi-Agent 分工 | LangGraph 多 Agent + 安全分支 | 「多路结果冲突怎么汇总」 | ✅ |
 | M6.2 | 会话记忆 + 多步规划 | checkpointer、planning node | 「会话记忆 vs 知识库」 | ✅ |
-| **M6.25** | **Reranker 二阶段重排（U-001）** | `reranker.py`、`retriever.py`、eval | 「RRF 之后为什么还要 Rerank」 | **本步** |
+| M6.25 | Reranker 二阶段重排（U-001） | `reranker.py`、`retriever.py`、eval | 「RRF 之后为什么还要 Rerank」 | ✅ |
+| **M6.26** | **Faithfulness 口径（U-002 轻量）** | `BASELINE.md`、qa、backlog | 「Retrieve 命中为何仍幻觉」 | **本步** |
 | M6.3 | README 简历化 + `PITCH.md` | `README.md`、`docs/PITCH.md` | 「3 分钟介绍 ShipLog」 | PITCH ✅ / README 延后 |
 | M6.4 | 场景面试 20 题自测 | `qa-m6.md` | 场景题 ≥15/20 | 进行中 |
 
 > **编号说明**：  
 > - 原 M5 后半并入 M6：原 M5.4→M5.3，原 M5.3→M6.3，原 M5.5→M6.4  
-> - **M6.25** 插在 Agent 能力（6.0～6.2）与交付（6.3～6.4）之间：检索精排服务 `search_runbook` / CRAG，写进简历前先有数字对比  
-> - 面经 backlog：U-001 = M6.25；U-002 Faithfulness 轻量包装另排；U-003/U-004 见 backlog 状态
+> - **M6.25** 检索精排；**M6.26** 生成层评测口径（对齐 RAGAS faithfulness，不装官方包）  
+> - 面经 backlog：U-001=M6.25；U-002=M6.26；U-003/U-004 见 backlog 状态
 
 ---
 
@@ -239,7 +241,7 @@ query
 |------|------|
 | `app/rag/reranker.py` | `CrossEncoder` 懒加载；`rerank_documents(query, docs, top_k)` |
 | `app/rag/retriever.py` | `retrieve(..., use_rerank=)`；开启时粗排池 → 精排 |
-| `app/config.py` | `RERANK_ENABLED`（默认 `1`）、`RERANK_MODEL`、`RERANK_POOL` |
+| `app/config.py` | `RERANK_ENABLED`（默认 `0`）、`RERANK_MODEL`、`RERANK_POOL` |
 | `eval/run_eval.py` | `--rerank` 对比有无精排的 Recall@3 / MRR |
 | `tests/test_reranker.py` | mock CrossEncoder 单测（不下载模型） |
 
@@ -247,18 +249,20 @@ query
 
 | 变量 | 默认 | 说明 |
 |------|------|------|
-| `RERANK_ENABLED` | `1` | 设 `0` 关闭（仅 RRF） |
+| `RERANK_ENABLED` | `0` | 设 `1` 开启（首次会下载/加载 CrossEncoder） |
 | `RERANK_MODEL` | `BAAI/bge-reranker-base` | CrossEncoder 模型 |
 | `RERANK_POOL` | `20` | 粗排候选数 |
 
-首次启用会经 HF 镜像下载模型；CPU 上全量 38 题 eval 可能较慢，可先冒烟。
+首次启用会经 HF 镜像下载模型；CPU 上全量 38 题 eval 可能较慢，可先冒烟。  
+Rerank 失败时 **fail-open**（回退粗排 Top-K），不拖垮整条问答。
 
 ### 验收
 
 ```powershell
 cd E:\01_Dev\langChain
 .venv\Scripts\python.exe -m unittest tests.test_reranker -v
-uv run python eval/run_eval.py --no-file
+# 演示开启 Rerank 后再评：
+$env:RERANK_ENABLED="1"
 uv run python eval/run_eval.py --rerank --no-file
 ```
 
@@ -274,6 +278,38 @@ uv run python eval/run_eval.py --rerank --no-file
 3. 「CPU 上 Rerank 太慢怎么办？」
 
 → 参考答案写入 [qa-m6.md](../qa/qa-m6.md) §M6.25。
+
+---
+
+## M6.26 Faithfulness 口径（U-002 轻量）
+
+**目标**：把已有 `run_gen_eval` **幻觉率**对齐面试常说的 **faithfulness**，能讲清「Retrieve 命中 ≠ 不幻觉」；**不**引入官方 `ragas` 包。
+
+**对应 backlog**：[U-002](../interview/upgrades/backlog.md)
+
+### 做了什么
+
+| 项 | 说明 |
+|----|------|
+| 口径 | 答案级 faithfulness ≈ `1 − 幻觉率`（同实验组） |
+| 诚实边界 | ≠ RAGAS claim 级 faithfulness；未跑官方库 |
+| Case | q02（On-call 无 CRAG）、q08（有 CRAG 仍 HALLU） |
+| 文档 | [BASELINE.md](../eval/BASELINE.md)「与 RAGAS / faithfulness 对照」 |
+
+### 验收
+
+- [x] BASELINE 有对照表 + 换算数字（≈89.7% / 82.8% / 88.5%）  
+- [x] 能口述 Retrieve vs Generate 分层 + 1 个 HALLU case  
+- [x] backlog U-002 标 done（轻量）  
+- [ ] （可选）重跑 `run_gen_eval.py` 刷新 v6——非本步必做  
+
+### 场景题
+
+1. 「你们测了 RAGAS faithfulness 吗？」  
+2. 「检索 Recall 很高为什么还会幻觉？」  
+3. 「答案级 faithfulness 和 claim 级差在哪？」
+
+→ [qa-m6.md](../qa/qa-m6.md) §M6.26。
 
 ---
 
@@ -344,12 +380,11 @@ uv run python eval/run_eval.py --rerank --no-file
 |----|------|
 | CLIP / 端到端多模态向量 | backlog U-009 |
 | MCP 协议 | backlog U-005 |
-| 完整 RAGAS 包（U-002 正统版） | 先用 gen_eval 幻觉率对齐 faithfulness 口径 |
+| 官方 RAGAS Python 包（U-002 正统版） | 轻量口径已够用；需要 brand 名再加 |
 
 ---
 
 ## 下一步
 
-**当前**：验收 **M6.25**（单测 + `--rerank` eval）→ 更新 BASELINE。  
-之后：自测 **M6.4** → 口述 PITCH → 「继续 M6.3 README」。  
-U-002 轻量 faithfulness 包装可插在 M6.25 之后、README 之前。
+**当前**：M6.25 / M6.26 文档与口径已齐。  
+之后：自测 **M6.4** → 口述 PITCH → 「继续 M6.3 README」。

@@ -307,6 +307,46 @@
 
 ---
 
+## M6.26 Faithfulness 口径（U-002 轻量）
+
+### 概念
+
+**Q：你们测 faithfulness 了吗？用的 RAGAS 吗？**
+
+**A：**
+
+- **目标同构**：答案必须能在检索 context 里找到依据（groundedness）。  
+- **实现**：`run_gen_eval.py` 用 temperature=0 的 LLM 做答案级幻觉判定；**答案级 faithfulness ≈ 1 − 幻觉率**。  
+- **未安装**官方 `ragas` 包；不说「跑了 RAGAS」，说「LLM-as-judge，口径对齐 faithfulness」。  
+- 数字（v5）：On-call+CRAG 幻觉 **11.5%** → 答案级 faithfulness ≈ **88.5%**。
+
+### 场景题（M6.26）
+
+**Q1：** 检索 Recall@3 已经 86.8%，为什么还会幻觉？
+
+**A：**
+
+1. **分层**：Recall 只保证「期望文件进 Top-K」；生成仍可能补文档没有的命令。  
+2. **Case**：q02「连接数打满」On-call 无 CRAG → `[HALLU]`（见 `gen_eval_result_v5.md`）。  
+3. **CRAG**：把幻觉 17.2%→11.5%，仍非零——grade 管相关，不管逐步溯源。  
+4. **本项目**：检索 `run_eval` + 生成 `run_gen_eval` 分开报。
+
+**Q2：** 答案级 faithfulness 和 RAGAS claim 级差在哪？
+
+**A：**
+
+1. **答案级**：整段答里「有没有任意一条胡编」→ 我们的幻觉率。  
+2. **Claim 级**：拆成多条陈述，每条算是否被 context 支持，再平均 → 官方 RAGAS 常见做法。  
+3. **口述**：我们优先答案级，On-call「不能编造任何命令」更严；claim 级是扩展。
+
+### M6.26 自检
+
+- [ ] 能说出 ≈88.5% 怎么从 11.5% 换算来  
+- [ ] 能举 q02 或 q08 说明 Retrieve≠Faithful  
+- [ ] 追问「用了 RAGAS 吗」时诚实说轻量口径、未装包
+
+---
+
 ## M6.4 综合自测 20 题（场景 + 八股）
 
 > **用法**：闭卷自答 → 对照参考答案 → 勾选自检。目标 **≥15/20**。  

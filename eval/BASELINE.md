@@ -44,7 +44,8 @@ uv run python eval/run_gen_eval.py --limit 5  # 快速测试
 | M4.3 混合检索 RRF（DevKit 18题） | 3 | **94.4%** | — | — | 与 M4.1 持平 | 2026-07-21 |
 | M5.2 纯向量（ShipLog 38题） | 3 | **86.8%** | 51.8% | 0.855 | vector_count=44，10 篇 kb | 2026-07-29 |
 | M5.2 混合检索 RRF（ShipLog 38题） | 3 | **86.8%** | 52.6% | 0.855 | 与纯向量持平（库小） | 2026-07-29 |
-| M6.25 RRF + Rerank（ShipLog 38题） | 3 | （跑 `--rerank` 后填） | — | — | `bge-reranker-base`，pool=20 | 2026-08-25 |
+| M6.25 同库 RRF（vector=148） | 3 | **86.8%** | 54.4% | 0.829 | 含 demo/samples，噪声↑ | 2026-08-25 |
+| M6.25 同库 RRF+Rerank（vector=148） | 3 | **84.2%** | 56.1% | 0.759 | CE 抬 postmortem，q26 miss | 2026-08-25 |
 
 ### M4.1 已知 Miss（DevKit 阶段）
 
@@ -80,6 +81,38 @@ uv run python eval/run_gen_eval.py --limit 5  # 快速测试
 
 **误拒答率 12.1% → 21.2%**：CRAG 的 grade 节点有时太严格，把相关文档判为不相关导致误拒答。这是 safety vs availability 的 trade-off——On-call 场景下宁可误拒答也不编造命令。
 
+### 与 RAGAS / faithfulness 对照（M6.26 · U-002 轻量）
+
+> **不做**官方 `ragas` Python 包（依赖与 API 兼容成本高）。用已有 LLM-judge **幻觉率**对齐面试常说的 faithfulness 口径，并诚实区分粒度。
+
+| 概念 | RAGAS 官方常见做法 | 本项目（`run_gen_eval.py`） |
+|------|-------------------|---------------------------|
+| Faithfulness | 拆答案 claim，逐条看是否被 **contexts** 蕴含，再算比例 | **答案级**：非拒答答案中，是否含「文档没有的命令/步骤」（任一即 HALLU） |
+| 换算（口述用） | — | 同组 **答案级 faithfulness ≈ 1 − 幻觉率** |
+| Answer relevancy | 另有指标 | 未单独测；用人工看 sources + 回答是否跑题 |
+
+**同组换算（v5 / BASELINE 上表）**：
+
+| 实验 | 幻觉率 | 答案级 faithfulness（≈1−幻觉率） |
+|------|--------|----------------------------------|
+| 无 CRAG + 通用 prompt | 10.3% | ≈ **89.7%** |
+| 无 CRAG + On-call prompt | 17.2% | ≈ **82.8%** |
+| 有 CRAG + On-call prompt | 11.5% | ≈ **88.5%** |
+
+**分母（必须说清）**：幻觉率 =「**标注为应答题**（`should_abstain=false`）且模型**未拒答**」的题目里，被判 HALLU 的比例。  
+**不是**「全部 43 题」的平均。应拒答却硬答的题进 **拒答准确率**，不进幻觉率分母（见 `calc_gen_metrics`）。
+
+**重要（防穿帮）**：这是 **答案级**「整答有没有胡编」比例，**不是** RAGAS 的 **claim 级** faithfulness。数字接近时不要说「我们跑了官方 RAGAS」。可说：「目标同构——答案必须 grounded 在检索 context；实现是 DeepSeek temperature=0 的 LLM-as-judge。」
+
+#### Case：Retrieve 命中，Generate 仍胡编
+
+| id | 实验组 | 现象 | 说明 |
+|----|--------|------|------|
+| **q02** | 无 CRAG + On-call | `[HALLU]`「Redis 连接数打满了怎么办」 | 检索侧通常能命中 `redis-timeout.md`，但 On-call prompt 逼写具体命令，judge 判存在文档未覆盖细节 → **检索层 HIT ≠ 生成层 faithfulness** |
+| **q08** | 有 CRAG + On-call | `[HALLU]`「服务回滚怎么操作」 | 回答已引用 `runbooks/rollback.md`，CRAG 也放行，仍被判 HALLU → 说明 grade 管「相关」，不管「生成是否逐步可溯源」 |
+
+完整原文见 [`gen_eval_result_v5.md`](gen_eval_result_v5.md) 对应 `[HALLU]` 节。
+
 ### abstain 集（应拒答题，均不在知识库内）
 
 | id | 问题 | 说明 |
@@ -99,6 +132,7 @@ uv run python eval/run_gen_eval.py --limit 5  # 快速测试
 
 > 自建 43 题 eval（38 scored + 10 abstain），标注期望来源文件。  
 > **检索层**：`run_eval.py` 跑 Recall@3 / Precision@3 / MRR。ShipLog 库 Recall 86.8%（5 道知识库不覆盖的 On-call 场景 miss）、MRR 0.855。  
-> **生成层**：`run_gen_eval.py` 对比无 CRAG vs 有 CRAG、通用 vs On-call prompt，用 temperature=0 的 LLM 逐条检查幻觉。  
-> 量化改进：CRAG 把幻觉率从 **17.2% → 11.5%**（-5.7pp），代价是误拒答率从 12.1% → 21.2%（grade 偏严格的 trade-off）。  
-> 意外发现：On-call prompt 要求"给出具体命令"反而诱导幻觉（10.3% → 17.2%），因为 LLM 会补全文档中没有的命令细节——prompt 设计需要平衡"详细"和"保守"。
+> **生成层**：`run_gen_eval.py` 对比无 CRAG vs 有 CRAG、通用 vs On-call prompt，用 temperature=0 的 LLM 逐条检查幻觉（**答案级 faithfulness ≈ 1−幻觉率**，非官方 RAGAS 包）。  
+> 量化改进：CRAG 把幻觉率从 **17.2% → 11.5%**（答案级 faithfulness ≈82.8%→88.5%），代价是误拒答率从 12.1% → 21.2%。  
+> 意外发现：On-call prompt 要求"给出具体命令"反而诱导幻觉（10.3% → 17.2%）。  
+> **Retrieve≠Faithful**：如 q02/q08，Runbook 已命中仍可能 HALLU——要分层评测。
