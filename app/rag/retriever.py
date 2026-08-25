@@ -58,7 +58,7 @@ def retrieve(
 ) -> list[Document]:
     """混合检索：向量（语义）+ BM25（关键词），RRF 融合；可选 CrossEncoder 精排。
 
-    ``use_rerank`` 默认读 ``RERANK_ENABLED``（默认开启）。
+    ``use_rerank`` 默认读 ``RERANK_ENABLED``（默认关闭，避免 CPU 首请求拉模型卡住）。
     开启时：粗排池 ``RERANK_POOL``（默认 20）→ rerank → Top-K。
     """
     enabled = is_rerank_enabled() if use_rerank is None else use_rerank

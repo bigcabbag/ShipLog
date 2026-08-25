@@ -23,9 +23,9 @@ def get_embedding_model() -> str:
 
 @lru_cache
 def is_rerank_enabled() -> bool:
-    """M6.25：默认开启二阶段 Rerank；设 RERANK_ENABLED=0 可关闭。"""
-    raw = os.getenv("RERANK_ENABLED", "1").strip().lower()
-    return raw not in {"0", "false", "no", "off"}
+    """M6.25：二阶段 Rerank。默认关闭（CPU/Docker 首请求会拉模型）；演示设 RERANK_ENABLED=1。"""
+    raw = os.getenv("RERANK_ENABLED", "0").strip().lower()
+    return raw in {"1", "true", "yes", "on"}
 
 
 @lru_cache

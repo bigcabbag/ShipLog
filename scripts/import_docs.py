@@ -13,9 +13,11 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from app.rag.bm25_index import rebuild_from_vector_store
-from app.rag.loader import load_and_split_markdown
-from app.rag.store import get_index_stats, index_chunks
+# 先设 HF 镜像，再加载会间接 import huggingface_hub 的模块
+import app.config  # noqa: E402, F401
+from app.rag.bm25_index import rebuild_from_vector_store  # noqa: E402
+from app.rag.loader import load_and_split_markdown  # noqa: E402
+from app.rag.store import get_index_stats, index_chunks  # noqa: E402
 
 KB_DIR = ROOT / "docs" / "kb"
 

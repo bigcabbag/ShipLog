@@ -1,4 +1,4 @@
-# Retrieval Eval @K=3 (hybrid (BM25+vector RRF))
+# Retrieval Eval @K=3 (hybrid RRF + CrossEncoder rerank)
 
 - vector_count=148, bm25_count=148, questions=43
 - scored=38, abstain=5
@@ -7,9 +7,9 @@
 
 | 指标 | 值 |
 | --- | ---: |
-| Recall@3 | 86.8% |
-| Precision@3 | 54.4% |
-| MRR@3 | 0.829 |
+| Recall@3 | 84.2% |
+| Precision@3 | 56.1% |
+| MRR@3 | 0.759 |
 
 ## 逐题明细
 
@@ -19,7 +19,7 @@
 
 **期望：** runbooks/redis-timeout.md
 
-**检索：** runbooks/redis-timeout.md, runbooks/redis-timeout.md, postmortems/2024-01-redis-cache-flush.md
+**检索：** runbooks/redis-timeout.md, demo/demo-screenshot.md, runbooks/redis-timeout.md
 
 ### ✅ [HIT] q02 (scored)（rank=1）
 
@@ -27,15 +27,15 @@
 
 **期望：** runbooks/redis-timeout.md
 
-**检索：** runbooks/redis-timeout.md, postmortems/2024-01-redis-cache-flush.md, runbooks/redis-timeout.md
+**检索：** runbooks/redis-timeout.md, runbooks/redis-timeout.md, runbooks/redis-timeout.md
 
-### ✅ [HIT] q03 (scored)（rank=2）
+### ✅ [HIT] q03 (scored)（rank=1）
 
 **问题：** Redis 慢查询怎么查？
 
 **期望：** runbooks/redis-timeout.md
 
-**检索：** postmortems/2024-01-redis-cache-flush.md, runbooks/redis-timeout.md, runbooks/redis-timeout.md
+**检索：** runbooks/redis-timeout.md, runbooks/redis-timeout.md, runbooks/redis-timeout.md
 
 ### ✅ [HIT] q04 (scored)（rank=1）
 
@@ -43,15 +43,15 @@
 
 **期望：** runbooks/pod-oom.md
 
-**检索：** runbooks/pod-oom.md, postmortems/2024-06-pod-oom-loop.md, postmortems/2024-06-pod-oom-loop.md
+**检索：** runbooks/pod-oom.md, postmortems/2024-06-pod-oom-loop.md, runbooks/pod-oom.md
 
-### ✅ [HIT] q05 (scored)（rank=2）
+### ✅ [HIT] q05 (scored)（rank=1）
 
 **问题：** Pod 内存泄漏怎么定位？
 
 **期望：** runbooks/pod-oom.md
 
-**检索：** postmortems/2024-06-pod-oom-loop.md, runbooks/pod-oom.md, runbooks/redis-timeout.md
+**检索：** runbooks/pod-oom.md, postmortems/2024-06-pod-oom-loop.md, runbooks/pod-oom.md
 
 ### ✅ [HIT] q06 (scored)（rank=1）
 
@@ -61,13 +61,13 @@
 
 **检索：** runbooks/502-error.md, runbooks/502-error.md, postmortems/2024-03-payment-502.md
 
-### ✅ [HIT] q07 (scored)（rank=1）
+### ✅ [HIT] q07 (scored)（rank=2）
 
 **问题：** Nginx upstream 连接失败是什么原因？
 
 **期望：** runbooks/502-error.md
 
-**检索：** runbooks/502-error.md, postmortems/2024-03-payment-502.md, runbooks/502-error.md
+**检索：** postmortems/2024-03-payment-502.md, runbooks/502-error.md, runbooks/502-error.md
 
 ### ✅ [HIT] q08 (scored)（rank=1）
 
@@ -83,7 +83,7 @@
 
 **期望：** runbooks/rollback.md
 
-**检索：** runbooks/rollback.md, architecture/service-topology.md, runbooks/rollback.md
+**检索：** runbooks/rollback.md, runbooks/rollback.md, runbooks/502-error.md
 
 ### ✅ [HIT] q10 (scored)（rank=1）
 
@@ -99,15 +99,15 @@
 
 **期望：** architecture/service-topology.md
 
-**检索：** architecture/service-topology.md, postmortems/2024-06-pod-oom-loop.md, architecture/service-topology.md
+**检索：** architecture/service-topology.md, architecture/service-topology.md, architecture/service-topology.md
 
-### ✅ [HIT] q12 (scored)（rank=1）
+### ✅ [HIT] q12 (scored)（rank=2）
 
 **问题：** On-call 告警分级有哪些？P0 是什么意思？
 
 **期望：** architecture/oncall-process.md
 
-**检索：** architecture/oncall-process.md, architecture/service-topology.md, architecture/service-topology.md
+**检索：** architecture/service-topology.md, architecture/oncall-process.md, postmortems/2024-01-redis-cache-flush.md
 
 ### ✅ [HIT] q13 (scored)（rank=1）
 
@@ -115,7 +115,7 @@
 
 **期望：** architecture/oncall-process.md
 
-**检索：** architecture/oncall-process.md, architecture/service-topology.md, runbooks/rollback.md
+**检索：** architecture/oncall-process.md, postmortems/2024-03-payment-502.md, postmortems/2024-06-pod-oom-loop.md
 
 ### ✅ [HIT] q14 (scored)（rank=1）
 
@@ -139,15 +139,15 @@
 
 **期望：** postmortems/2024-03-payment-502.md
 
-**检索：** postmortems/2024-03-payment-502.md, runbooks/502-error.md, postmortems/2024-03-payment-502.md
+**检索：** postmortems/2024-03-payment-502.md, postmortems/2024-03-payment-502.md, postmortems/2024-06-pod-oom-loop.md
 
-### ✅ [HIT] q17 (scored)（rank=1）
+### ✅ [HIT] q17 (scored)（rank=2）
 
 **问题：** 搜索服务 Pod OOM 循环是什么原因？
 
 **期望：** postmortems/2024-06-pod-oom-loop.md
 
-**检索：** postmortems/2024-06-pod-oom-loop.md, postmortems/2024-06-pod-oom-loop.md, runbooks/pod-oom.md
+**检索：** runbooks/pod-oom.md, postmortems/2024-06-pod-oom-loop.md, postmortems/2024-06-pod-oom-loop.md
 
 ### ✅ [HIT] q18 (scored)（rank=1）
 
@@ -155,15 +155,15 @@
 
 **期望：** architecture/oncall-process.md
 
-**检索：** architecture/oncall-process.md, runbooks/502-error.md, postmortems/2024-01-redis-cache-flush.md
+**检索：** architecture/oncall-process.md, postmortems/2024-01-redis-cache-flush.md, postmortems/2024-03-payment-502.md
 
-### ✅ [HIT] q19 (scored)（rank=1）
+### ✅ [HIT] q19 (scored)（rank=3）
 
 **问题：** 如何在生产环境执行 FLUSHALL 清空 Redis 缓存来释放内存？
 
 **期望：** runbooks/redis-timeout.md, architecture/oncall-process.md
 
-**检索：** runbooks/redis-timeout.md, architecture/oncall-process.md, postmortems/2024-01-redis-cache-flush.md
+**检索：** postmortems/2024-01-redis-cache-flush.md, postmortems/2024-01-redis-cache-flush.md, architecture/oncall-process.md
 
 ### ✅ [HIT] q20 (scored)（rank=1）
 
@@ -171,7 +171,7 @@
 
 **期望：** architecture/oncall-process.md
 
-**检索：** architecture/oncall-process.md, runbooks/redis-timeout.md, runbooks/disk-full.md
+**检索：** architecture/oncall-process.md, postmortems/2024-01-redis-cache-flush.md, runbooks/redis-timeout.md
 
 ### ✅ [HIT] q21 (scored)（rank=2）
 
@@ -179,7 +179,7 @@
 
 **期望：** runbooks/redis-timeout.md, runbooks/pod-oom.md
 
-**检索：** postmortems/2024-06-pod-oom-loop.md, runbooks/redis-timeout.md, runbooks/redis-timeout.md
+**检索：** demo/demo-screenshot.md, runbooks/redis-timeout.md, runbooks/pod-oom.md
 
 ### ✅ [HIT] q22 (scored)（rank=1）
 
@@ -187,7 +187,7 @@
 
 **期望：** runbooks/502-error.md, runbooks/rollback.md
 
-**检索：** runbooks/502-error.md, runbooks/502-error.md, postmortems/2024-03-payment-502.md
+**检索：** runbooks/502-error.md, runbooks/rollback.md, postmortems/2024-03-payment-502.md
 
 ### ❌ [MISS] q23 (abstain)
 
@@ -195,7 +195,7 @@
 
 **期望：** (none)
 
-**检索：** postmortems/2024-06-pod-oom-loop.md, postmortems/2024-06-pod-oom-loop.md, postmortems/2024-06-pod-oom-loop.md
+**检索：** runbooks/502-error.md, runbooks/502-error.md, runbooks/502-error.md
 
 ### ✅ [HIT] q24 (scored)（rank=1）
 
@@ -211,15 +211,15 @@
 
 **期望：** runbooks/rollback.md
 
-**检索：** runbooks/rollback.md, runbooks/pod-oom.md, runbooks/rollback.md
+**检索：** runbooks/rollback.md, runbooks/pod-oom.md, runbooks/502-error.md
 
-### ✅ [HIT] q26 (scored)（rank=1）
+### ❌ [MISS] q26 (scored)
 
 **问题：** 生产环境能不能直接 FLUSHALL 清空 Redis 缓存？
 
 **期望：** runbooks/redis-timeout.md
 
-**检索：** runbooks/redis-timeout.md, postmortems/2024-01-redis-cache-flush.md, architecture/oncall-process.md
+**检索：** postmortems/2024-01-redis-cache-flush.md, postmortems/2024-01-redis-cache-flush.md, postmortems/2024-01-redis-cache-flush.md
 
 ### ❌ [MISS] q27 (abstain)
 
@@ -227,7 +227,7 @@
 
 **期望：** (none)
 
-**检索：** runbooks/pod-oom.md, runbooks/disk-full.md, runbooks/pod-oom.md
+**检索：** runbooks/disk-full.md, runbooks/pod-oom.md, runbooks/redis-timeout.md
 
 ### ✅ [HIT] q28 (scored)（rank=1）
 
@@ -235,15 +235,15 @@
 
 **期望：** runbooks/pod-oom.md
 
-**检索：** runbooks/pod-oom.md, postmortems/2024-06-pod-oom-loop.md, postmortems/2024-03-payment-502.md
+**检索：** runbooks/pod-oom.md, postmortems/2024-03-payment-502.md, runbooks/disk-full.md
 
-### ✅ [HIT] q29 (scored)（rank=1）
+### ✅ [HIT] q29 (scored)（rank=2）
 
 **问题：** 支付服务 502 事故里 readiness probe 有什么问题？
 
 **期望：** postmortems/2024-03-payment-502.md
 
-**检索：** postmortems/2024-03-payment-502.md, runbooks/502-error.md, postmortems/2024-03-payment-502.md
+**检索：** runbooks/502-error.md, postmortems/2024-03-payment-502.md, postmortems/2024-03-payment-502.md
 
 ### ✅ [HIT] q30 (scored)（rank=1）
 
@@ -251,7 +251,7 @@
 
 **期望：** postmortems/2024-06-pod-oom-loop.md
 
-**检索：** postmortems/2024-06-pod-oom-loop.md, postmortems/2024-06-pod-oom-loop.md, architecture/service-topology.md
+**检索：** postmortems/2024-06-pod-oom-loop.md, postmortems/2024-06-pod-oom-loop.md, postmortems/2024-06-pod-oom-loop.md
 
 ### ❌ [MISS] q31 (abstain)
 
@@ -267,7 +267,7 @@
 
 **期望：** (none)
 
-**检索：** runbooks/rollback.md, postmortems/2024-01-redis-cache-flush.md, architecture/oncall-process.md
+**检索：** runbooks/rollback.md, runbooks/502-error.md, postmortems/2024-01-redis-cache-flush.md
 
 ### ❌ [MISS] q33 (abstain)
 
@@ -275,7 +275,7 @@
 
 **期望：** (none)
 
-**检索：** architecture/oncall-process.md, runbooks/redis-timeout.md, postmortems/2024-06-pod-oom-loop.md
+**检索：** architecture/service-topology.md, runbooks/redis-timeout.md, architecture/service-topology.md
 
 ### ✅ [HIT] q34 (scored)（rank=1）
 
@@ -283,7 +283,7 @@
 
 **期望：** architecture/service-topology.md
 
-**检索：** architecture/service-topology.md, architecture/service-topology.md, architecture/service-topology.md
+**检索：** architecture/service-topology.md, architecture/service-topology.md, demo/demo-screenshot.md
 
 ### ✅ [HIT] q35 (scored)（rank=1）
 
@@ -291,7 +291,7 @@
 
 **期望：** architecture/oncall-process.md
 
-**检索：** architecture/oncall-process.md, architecture/service-topology.md, architecture/service-topology.md
+**检索：** architecture/oncall-process.md, postmortems/2024-01-redis-cache-flush.md, runbooks/rollback.md
 
 ### ✅ [HIT] q36 (scored)（rank=1）
 
@@ -307,7 +307,7 @@
 
 **期望：** postmortems/2024-03-payment-502.md
 
-**检索：** postmortems/2024-03-payment-502.md, runbooks/502-error.md, postmortems/2024-03-payment-502.md
+**检索：** postmortems/2024-03-payment-502.md, postmortems/2024-03-payment-502.md, runbooks/502-error.md
 
 ### ✅ [HIT] q38 (scored)（rank=1）
 
@@ -315,7 +315,7 @@
 
 **期望：** postmortems/2024-06-pod-oom-loop.md
 
-**检索：** postmortems/2024-06-pod-oom-loop.md, postmortems/2024-06-pod-oom-loop.md, postmortems/2024-01-redis-cache-flush.md
+**检索：** postmortems/2024-06-pod-oom-loop.md, postmortems/2024-06-pod-oom-loop.md, postmortems/2024-03-payment-502.md
 
 ### ❌ [MISS] q39 (abstain)
 
@@ -323,7 +323,7 @@
 
 **期望：** runbooks/prometheus-alerts.md
 
-**检索：** architecture/service-topology.md, postmortems/2024-03-payment-502.md, architecture/oncall-process.md
+**检索：** architecture/service-topology.md, architecture/oncall-process.md, demo/demo-screenshot.md
 
 ### ❌ [MISS] q40 (abstain)
 
@@ -331,7 +331,7 @@
 
 **期望：** runbooks/network-policy.md
 
-**检索：** architecture/service-topology.md, runbooks/disk-full.md, runbooks/disk-full.md
+**检索：** architecture/service-topology.md, runbooks/rollback.md, runbooks/disk-full.md
 
 ### ❌ [MISS] q41 (abstain)
 
@@ -339,7 +339,7 @@
 
 **期望：** runbooks/nginx-ssl.md
 
-**检索：** runbooks/502-error.md, postmortems/2024-03-payment-502.md, architecture/service-topology.md
+**检索：** runbooks/502-error.md, runbooks/502-error.md, runbooks/502-error.md
 
 ### ❌ [MISS] q42 (abstain)
 
@@ -355,7 +355,7 @@
 
 **期望：** runbooks/gitlab-ci.md
 
-**检索：** runbooks/disk-full.md, runbooks/disk-full.md, runbooks/disk-full.md
+**检索：** postmortems/2024-03-payment-502.md, postmortems/2024-03-payment-502.md, postmortems/2024-03-payment-502.md
 
 ## abstain 集
 

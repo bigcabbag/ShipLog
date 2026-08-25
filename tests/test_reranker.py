@@ -35,6 +35,19 @@ class TestRerankDocuments(unittest.TestCase):
         pairs = mock.predict.call_args[0][0]
         self.assertEqual(pairs[0], ["Redis 超时怎么办", "无关内容"])
 
+    def test_rerank_fail_open_on_predict_error(self) -> None:
+        docs = [
+            Document(page_content="a", metadata={"source": "a.md"}),
+            Document(page_content="b", metadata={"source": "b.md"}),
+        ]
+        mock = MagicMock()
+        mock.predict.side_effect = RuntimeError("cuda oom")
+
+        out = rerank_documents("q", docs, top_k=1, model=mock)
+
+        self.assertEqual(len(out), 1)
+        self.assertEqual(out[0].metadata["source"], "a.md")
+
     def test_empty_docs(self) -> None:
         self.assertEqual(rerank_documents("q", [], top_k=3), [])
 
