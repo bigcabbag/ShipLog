@@ -1,0 +1,23 @@
+# HuggingFace 国内镜像（强制）
+
+## 问题
+
+`WinError 10060` 连 `https://huggingface.co/...`（如 `bge-small-zh-v1.5`）= **直连官网超时**。本机在国内，**禁止**依赖默认可达的 huggingface.co。
+
+## 根因（必记）
+
+`huggingface_hub` 在 **import 时**把 `constants.ENDPOINT` 写死。若先 `import langchain_*` 再设 `HF_ENDPOINT`，环境变量已改、**请求仍打官网**。
+
+## 正确做法
+
+1. 任何入口（`main.py`、`eval/*.py`、`scripts/*.py`、`app/llm.py`）**第一行业务 import 之前**：
+   `import app.hf_bootstrap`
+2. 下载/加载 embedding、rerank 前再调 `ensure_hf_mirror()`（热补已加载的 `ENDPOINT`）。
+3. 给用户的验收命令若会触发 embedding：同样先 bootstrap，**不要**写会直连官网的裸 `sentence_transformers` / `HuggingFaceEmbeddings` 示例。
+4. Docker / `.env`：默认 `HF_ENDPOINT=https://hf-mirror.com`（已有则保留）。
+
+## 禁止
+
+- 假设「设了环境变量就一定走镜像」而不热补 constants  
+- 验收/演示步骤里让用户先 import langchain 再谈镜像  
+- 建议用户挂 VPN 上官网作为默认方案（镜像优先）

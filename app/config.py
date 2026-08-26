@@ -4,16 +4,15 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+# 必须最先：修 HF 镜像（含热补 huggingface_hub.constants），再让其它包 import hub
+import app.hf_bootstrap  # noqa: F401
+from app.hf_bootstrap import ensure_hf_mirror
+
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 _ENV_FILE = _PROJECT_ROOT / ".env"
 
 load_dotenv(_ENV_FILE, encoding="utf-8-sig")
-
-
-# 国内默认走 HuggingFace 镜像（可在 .env 里覆盖 HF_ENDPOINT）
-_hf_endpoint = os.getenv("HF_ENDPOINT", "").strip()
-if not _hf_endpoint:
-    os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
+ensure_hf_mirror()
 
 
 @lru_cache

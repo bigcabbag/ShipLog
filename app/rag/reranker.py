@@ -19,7 +19,9 @@ _RERANK_TEXT_MAX_CHARS = 480
 @lru_cache
 def get_cross_encoder() -> Any:
     """懒加载 CrossEncoder；首次调用会下载/加载模型。"""
-    # config 已在模块顶层 import，保证 HF_ENDPOINT 先于 sentence_transformers 生效
+    from app.hf_bootstrap import ensure_hf_mirror
+
+    ensure_hf_mirror()
     from sentence_transformers import CrossEncoder
 
     return CrossEncoder(get_rerank_model())

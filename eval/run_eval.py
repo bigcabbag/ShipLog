@@ -23,6 +23,8 @@ if str(ROOT) not in sys.path:
 if str(EVAL_DIR) not in sys.path:
     sys.path.insert(0, str(EVAL_DIR))
 
+import app.hf_bootstrap  # noqa: E402, F401
+
 from app.rag.retriever import retrieve
 from app.rag.store import get_index_stats
 from report_md import format_retrieval_report

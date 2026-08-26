@@ -2,6 +2,9 @@
 import json
 from contextlib import asynccontextmanager
 
+# 国内 HF 镜像：须先于任何可能间接 import huggingface_hub 的依赖
+import app.hf_bootstrap  # noqa: F401
+
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, StreamingResponse

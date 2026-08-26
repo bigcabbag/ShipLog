@@ -1,3 +1,6 @@
+# 先于 langchain：否则 hub.ENDPOINT 会被钉死成 huggingface.co（WinError 10060）
+import app.hf_bootstrap  # noqa: F401
+
 from functools import lru_cache
 from typing import Any
 

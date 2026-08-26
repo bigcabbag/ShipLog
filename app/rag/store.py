@@ -4,6 +4,8 @@
 retriever.py 依赖 store._collection.count()，用 PGVectorAdapter 兼容。
 """
 
+import app.hf_bootstrap  # noqa: F401
+
 from langchain_core.documents import Document
 from langchain_postgres import PGVector
 from sqlalchemy import create_engine, text
@@ -71,6 +73,29 @@ def get_vector_store() -> PGVectorAdapter:
         embeddings=get_embeddings(),
     )
     return PGVectorAdapter(store, conn)
+
+
+def clear_collection() -> int:
+    """清空当前向量集合全部 embedding（切块消融 / 全量重建前用）。"""
+    engine = create_engine(get_database_url())
+    deleted = 0
+    with engine.begin() as conn:
+        result = conn.execute(
+            text(
+                """
+                DELETE FROM langchain_pg_embedding e
+                USING langchain_pg_collection c
+                WHERE e.collection_id = c.uuid AND c.name = :name
+                """
+            ),
+            {"name": COLLECTION_NAME},
+        )
+        deleted = int(result.rowcount or 0)
+    # BM25 随 rebuild_from_vector_store / 空库同步
+    from app.rag.bm25_index import _save_records
+
+    _save_records([])
+    return deleted
 
 
 def index_chunks(chunks: list[Document], source: str) -> int:

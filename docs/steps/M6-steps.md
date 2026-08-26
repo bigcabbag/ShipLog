@@ -4,7 +4,7 @@
 > **目标**：ShipLog On-call **Agent** 能力 + README/PITCH/面试自测。  
 > M4/M5 的 CRAG 仍负责**检索质量**；M6.0～M6.2 负责 **Agent**；M6.3～M6.4 负责 **简历交付**。
 
-**当前进度：M6.0～M6.2 已验收；M6.25 Reranker ✅；M6.26 faithfulness ✅；M6.27 误拒答 soft-fallback（U-018）✅；M6.3 PITCH 已有 / README 延后；M6.4 自测中。分支 `feature/m6-agent`。**
+**当前进度：M6.0～M6.2 / M6.25～M6.27 / M6.4 ✅；M6.3 PITCH ✅、README 仍延后（U-019）。分支 `feature/m6-agent`。**
 
 ---
 
@@ -29,9 +29,9 @@ flowchart LR
 | M6.2 | 会话记忆 + 多步规划 | checkpointer、planning node | 「会话记忆 vs 知识库」 | ✅ |
 | M6.25 | Reranker 二阶段重排（U-001） | `reranker.py`、`retriever.py`、eval | 「RRF 之后为什么还要 Rerank」 | ✅ |
 | M6.26 | Faithfulness 口径（U-002 轻量） | `BASELINE.md`、qa、backlog | 「Retrieve 命中为何仍幻觉」 | ✅ |
-| **M6.27** | **压低误拒答（U-018）** | `graph.py` grade + soft-fallback、`config` | 「CRAG 误拒答怎么降」 | **本步** |
-| M6.3 | README 简历化 + `PITCH.md` | `README.md`、`docs/PITCH.md` | 「3 分钟介绍 ShipLog」 | PITCH ✅ / README 延后 |
-| M6.4 | 场景面试 20 题自测 | `qa-m6.md` | 场景题 ≥15/20 | 进行中 |
+| M6.27 | 压低误拒答（U-018） | `graph.py` grade + soft-fallback、`config` | 「CRAG 误拒答怎么降」 | ✅ |
+| M6.3 | README 简历化 + `PITCH.md` | `README.md`、`docs/PITCH.md` | 「3 分钟介绍 ShipLog」 | PITCH ✅ / README **实习结束后** |
+| **M6.4** | **场景面试 20 题自测** | `qa-m6.md` | 场景题 ≥15/20 | ✅ |
 
 > **编号说明**：  
 > - 原 M5 后半并入 M6：原 M5.4→M5.3，原 M5.3→M6.3，原 M5.5→M6.4  
@@ -355,7 +355,7 @@ uv run python eval/run_eval.py --rerank --no-file
 ### 进度
 
 - [x] `docs/PITCH.md`：背景 → 方案 → 指标 → 难点（3 分钟口述稿）
-- [ ] `README.md` 简历化（**延后**，用户确认后再做）
+- [ ] `README.md` 简历化（**等实习结束再做**，约一周后；= backlog U-019）
 - [ ] 更新 [SCENARIO.md](../scenario/SCENARIO.md) 与 README 链到 PITCH/eval
 
 ### 要做的事（README 延后项）
@@ -383,7 +383,7 @@ uv run python eval/run_eval.py --rerank --no-file
 ### 进度
 
 - [x] `docs/qa/qa-m6.md` §M6.4：20 题完整参考答案（含美团/火山引擎类八股）
-- [ ] 用户自测勾选 ≥15/20
+- [x] 用户自测勾选 ≥15/20（2026-08-26 用户确认完成）
 
 ### 覆盖范围
 
@@ -392,8 +392,8 @@ uv run python eval/run_eval.py --rerank --no-file
 
 ### 验收
 
-- 自测 **≥15/20** 题
-- 能白板画：用户问 → Agent 选 tool → 检索/CRAG → 生成 + trace
+- [x] 自测 **≥15/20** 题
+- [x] 能白板画：用户问 → Agent 选 tool → 检索/CRAG → 生成 + trace
 
 ---
 
@@ -420,5 +420,5 @@ uv run python eval/run_eval.py --rerank --no-file
 
 ## 下一步
 
-**当前**：M6.27（U-018）已合入代码。  
-之后：自测 **M6.4** → 口述 PITCH → 「继续 M6.3 README」或按 backlog 做 **U-019 / U-003 / U-014**。
+**当前**：M6.4 自测 ✅；**U-012 Chunk 消融** ✅（选用 500/50，见 `eval/chunk_ablation.md`）；README（U-019）**等实习结束**再开。  
+期间：巩固口述 [PITCH.md](../PITCH.md)；可选 backlog（U-003 / U-014 等），不催 README。
