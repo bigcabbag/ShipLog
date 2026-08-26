@@ -4,7 +4,7 @@
 > **目标**：ShipLog On-call **Agent** 能力 + README/PITCH/面试自测。  
 > M4/M5 的 CRAG 仍负责**检索质量**；M6.0～M6.2 负责 **Agent**；M6.3～M6.4 负责 **简历交付**。
 
-**当前进度：M6.0～M6.2 已验收；M6.25 Reranker（U-001）✅；M6.26 faithfulness 口径（U-002 轻量）✅；M6.3 PITCH 已有 / README 延后；M6.4 自测中。分支 `feature/m6-agent`。**
+**当前进度：M6.0～M6.2 已验收；M6.25 Reranker ✅；M6.26 faithfulness ✅；M6.27 误拒答 soft-fallback（U-018）✅；M6.3 PITCH 已有 / README 延后；M6.4 自测中。分支 `feature/m6-agent`。**
 
 ---
 
@@ -17,7 +17,8 @@ flowchart LR
   M61 --> M62[M6.2 记忆与规划]
   M62 --> M625[M6.25 Reranker U-001]
   M625 --> M626[M6.26 Faithfulness U-002]
-  M626 --> M63[M6.3 README+PITCH]
+  M626 --> M627[M6.27 误拒答 U-018]
+  M627 --> M63[M6.3 README+PITCH]
   M63 --> M64[M6.4 面试 20 题]
 ```
 
@@ -27,14 +28,15 @@ flowchart LR
 | M6.1 | Multi-Agent 分工 | LangGraph 多 Agent + 安全分支 | 「多路结果冲突怎么汇总」 | ✅ |
 | M6.2 | 会话记忆 + 多步规划 | checkpointer、planning node | 「会话记忆 vs 知识库」 | ✅ |
 | M6.25 | Reranker 二阶段重排（U-001） | `reranker.py`、`retriever.py`、eval | 「RRF 之后为什么还要 Rerank」 | ✅ |
-| **M6.26** | **Faithfulness 口径（U-002 轻量）** | `BASELINE.md`、qa、backlog | 「Retrieve 命中为何仍幻觉」 | **本步** |
+| M6.26 | Faithfulness 口径（U-002 轻量） | `BASELINE.md`、qa、backlog | 「Retrieve 命中为何仍幻觉」 | ✅ |
+| **M6.27** | **压低误拒答（U-018）** | `graph.py` grade + soft-fallback、`config` | 「CRAG 误拒答怎么降」 | **本步** |
 | M6.3 | README 简历化 + `PITCH.md` | `README.md`、`docs/PITCH.md` | 「3 分钟介绍 ShipLog」 | PITCH ✅ / README 延后 |
 | M6.4 | 场景面试 20 题自测 | `qa-m6.md` | 场景题 ≥15/20 | 进行中 |
 
 > **编号说明**：  
 > - 原 M5 后半并入 M6：原 M5.4→M5.3，原 M5.3→M6.3，原 M5.5→M6.4  
-> - **M6.25** 检索精排；**M6.26** 生成层评测口径（对齐 RAGAS faithfulness，不装官方包）  
-> - 面经 backlog：U-001=M6.25；U-002=M6.26；U-003/U-004 见 backlog 状态
+> - **M6.25** 检索精排；**M6.26** 生成层 faithfulness 口径；**M6.27** 误拒答 soft-fallback（U-018）  
+> - 面经 backlog：见 [upgrades/backlog.md](../interview/upgrades/backlog.md)
 
 ---
 
@@ -313,6 +315,37 @@ uv run python eval/run_eval.py --rerank --no-file
 
 ---
 
+## M6.27 压低误拒答（U-018）
+
+**目标**：在尽量不抬升幻觉的前提下，降低 CRAG **误拒答率**（BASELINE 上有 CRAG 组曾到 **21.2%**）。
+
+**对应 backlog**：[U-018](../interview/upgrades/backlog.md)
+
+### 做了什么
+
+| 项 | 说明 |
+|----|------|
+| Grade 口径 | `GRADE_PROMPT` 偏召回：同域线索即相关；仅完全无关才 `NONE` |
+| Soft-fallback | 改写后仍 `NONE` 且检索非空 → 用 Top 文档 **谨慎生成**（`reason=soft_fallback`），默认开 |
+| 开关 | `CRAG_SOFT_FALLBACK=1`（默认）；`=0` 回到硬 abstain 便于对比 |
+| 纯函数 | `decide_route_when_no_relevant` + `tests/test_crag_soft_fallback.py` |
+
+### 验收
+
+- [x] 单测 soft / hard / empty 三路路由  
+- [x] trace `grade.reason=soft_fallback` 可回放  
+- [ ] （建议）`uv run python eval/run_gen_eval.py --output eval/gen_eval_result_v6.md` 刷新误拒答/幻觉数字（耗时长，见 U-020）
+
+### 场景题
+
+1. 「CRAG 误拒答为什么升高？你们怎么降？」  
+2. 「soft-fallback 会不会把幻觉抬回去？」  
+3. 「和 safe_response（危险操作拒答）是一回事吗？」
+
+→ [qa-m6.md](../qa/qa-m6.md) §M6.27。
+
+---
+
 ## M6.3 README 简历化 + PITCH
 
 > 原规划 **M5.3**。M6.0～M6.2 完成后写，叙事覆盖 **RAG → CRAG → PDF/截图 → Agent** 全链路。
@@ -381,10 +414,11 @@ uv run python eval/run_eval.py --rerank --no-file
 | CLIP / 端到端多模态向量 | backlog U-009 |
 | MCP 协议 | backlog U-005 |
 | 官方 RAGAS Python 包（U-002 正统版） | 轻量口径已够用；需要 brand 名再加 |
+| 全量 gen_eval 刷新（U-020） | M6.27 代码已合；数字以下次跑分为准 |
 
 ---
 
 ## 下一步
 
-**当前**：M6.25 / M6.26 文档与口径已齐。  
-之后：自测 **M6.4** → 口述 PITCH → 「继续 M6.3 README」。
+**当前**：M6.27（U-018）已合入代码。  
+之后：自测 **M6.4** → 口述 PITCH → 「继续 M6.3 README」或按 backlog 做 **U-019 / U-003 / U-014**。

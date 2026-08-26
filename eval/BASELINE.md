@@ -81,6 +81,19 @@ uv run python eval/run_gen_eval.py --limit 5  # 快速测试
 
 **误拒答率 12.1% → 21.2%**：CRAG 的 grade 节点有时太严格，把相关文档判为不相关导致误拒答。这是 safety vs availability 的 trade-off——On-call 场景下宁可误拒答也不编造命令。
 
+### M6.27 / U-018：压低误拒答（代码已合，数字待刷新）
+
+| 手段 | 行为 |
+|------|------|
+| Grade 偏召回 | 同故障域线索即相关；仅完全无关才 `NONE` |
+| Soft-fallback | 改写后仍 `NONE` 且检索非空 → 带谨慎说明的 generate（默认 `CRAG_SOFT_FALLBACK=1`） |
+| 硬 abstain | `CRAG_SOFT_FALLBACK=0` 可对比旧行为 |
+
+**预期方向**（需 `run_gen_eval` 验证，挂 U-020）：误拒答 **↓**；幻觉可能略 **↑**；应拒答题若仍检索到噪声块，也可能被 soft-fallback「硬答」→ **拒答准确率**需一起看。  
+当前对外口述仍可用上表 **21.2% / 11.5%** 作「优化前基线」，并说明已上 soft-fallback、全量数字待 v6。
+
+**风险（审查备忘）**：soft-fallback = 可用性优先；库外题只要 Top-K 非空就可能不再硬 abstain。对比实验请用 `CRAG_SOFT_FALLBACK=0`。
+
 ### 与 RAGAS / faithfulness 对照（M6.26 · U-002 轻量）
 
 > **不做**官方 `ragas` Python 包（依赖与 API 兼容成本高）。用已有 LLM-judge **幻觉率**对齐面试常说的 faithfulness 口径，并诚实区分粒度。
@@ -134,5 +147,6 @@ uv run python eval/run_gen_eval.py --limit 5  # 快速测试
 > **检索层**：`run_eval.py` 跑 Recall@3 / Precision@3 / MRR。ShipLog 库 Recall 86.8%（5 道知识库不覆盖的 On-call 场景 miss）、MRR 0.855。  
 > **生成层**：`run_gen_eval.py` 对比无 CRAG vs 有 CRAG、通用 vs On-call prompt，用 temperature=0 的 LLM 逐条检查幻觉（**答案级 faithfulness ≈ 1−幻觉率**，非官方 RAGAS 包）。  
 > 量化改进：CRAG 把幻觉率从 **17.2% → 11.5%**（答案级 faithfulness ≈82.8%→88.5%），代价是误拒答率从 12.1% → 21.2%。  
+> **M6.27**：grade 偏召回 + soft-fallback 降低误拒答（默认开）；全量 gen_eval 数字待刷新（U-020）。  
 > 意外发现：On-call prompt 要求"给出具体命令"反而诱导幻觉（10.3% → 17.2%）。  
 > **Retrieve≠Faithful**：如 q02/q08，Runbook 已命中仍可能 HALLU——要分层评测。

@@ -31,15 +31,17 @@
   - [x] M6.2 On-call 会话记忆 + 多步规划 ✅（`d4e0bcd` + 补充：generate 层多轮）
   - [x] **M6.25 Reranker 二阶段重排（U-001）** ✅（RRF pool → bge-reranker → Top-K）
   - [x] **M6.26 Faithfulness 口径（U-002 轻量）** ✅（幻觉率↔答案级 faithfulness；未装 ragas 包）
+  - [x] **M6.27 压低误拒答（U-018）** ✅（grade 偏召回 + soft-fallback；默认 `CRAG_SOFT_FALLBACK=1`）
   - [x] M6.3 `docs/PITCH.md` 3 分钟口述稿 ✅（README 简历化 **延后**）
-  - [ ] M6.4 场景面试 20 题自测（`qa-m6.md` §M6.4，目标 ≥15/20）
+  - [ ] M6.4 场景面试 20 题自测（`qa/qa-m6.md` §M6.4，目标 ≥15/20）
   - [x] 前端质感升级：plan 时间线 + 对比加深 + 主/侧栏分层（保留秋色暖风）
 
 **项目场景**：**ShipLog — 研发 On-call 故障排查助手**（M5.2 起；M4 阶段为 DevKit 文档助手，见 [SCENARIO.md](../scenario/SCENARIO.md)）  
 **面试题规则**：每步出**场景题**（面经驱动），见 [qa-scenario-guide.md](../qa/qa-scenario-guide.md)  
-**秋招面经库**（外部面经收集 + 项目映射 + 升级 backlog）：[interview/README.md](../interview/README.md)
+**秋招面经库**（外部面经收集 + 项目映射 + 升级 backlog）：[interview/README.md](../interview/README.md)  
+**简历分栏知识库**：[resume/README.md](../resume/README.md)（实习 / 项目各一份）
 
-**下一步**：自测 [qa-m6.md](../qa/qa-m6.md) **M6.4** → 口述 [PITCH.md](../PITCH.md) → 「继续 M6.3 README」
+**下一步**：自测 [qa/qa-m6.md](../qa/qa-m6.md) **M6.4** → 口述 [PITCH.md](../PITCH.md) → 「继续 M6.3 README」或 backlog **U-019 / U-003 / U-014**
 
 ## 协作方式：PR 流程（从 M3 起）
 

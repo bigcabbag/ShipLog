@@ -347,6 +347,38 @@
 
 ---
 
+## M6.27 压低误拒答（U-018）
+
+### 概念
+
+**Q：CRAG 为什么误拒答会到 21.2%？你们怎么降？**
+
+**A：**
+
+1. **根因**：grade 过严（「必须能完整回答」）→ 两次 NONE → 硬 abstain，库内题也被拒。  
+2. **手段**：① grade 改成偏召回（同域线索即相关）；② 改写后仍 NONE 且检索非空 → **soft-fallback** 谨慎生成（trace `reason=soft_fallback`）。  
+3. **开关**：默认 `CRAG_SOFT_FALLBACK=1`；对比实验可关。  
+4. **边界**：soft-fallback **不是** `safe_response`（危险操作明确拒答仍走安全分支）。  
+5. **数字**：优化前基线误拒答 21.2%；全量 gen_eval 刷新见 U-020。
+
+### 场景题（M6.27）
+
+**Q1：** soft-fallback 会不会把幻觉抬回去？
+
+**A：** 可能略升——用检索 Top 但 grade 未认可的块生成。因此加「文档不足就说不确定、禁编命令」提示；需用 gen_eval 看 trade-off，不能只报误拒答。
+
+**Q2：** 和 safe_response 是一回事吗？
+
+**A：** 不是。误拒答 = 库内该答却 abstain；safe_response = 用户要 FLUSHALL 等危险操作时 **明确拒答并讲审批**。一个是可用性，一个是安全策略。
+
+### M6.27 自检
+
+- [ ] 能画：NONE → rewrite → 仍 NONE → soft_generate vs 硬 abstain  
+- [ ] 知道 `CRAG_SOFT_FALLBACK` 默认开  
+- [ ] 能区分 soft-fallback 与 safe_response
+
+---
+
 ## M6.4 综合自测 20 题（场景 + 八股）
 
 > **用法**：闭卷自答 → 对照参考答案 → 勾选自检。目标 **≥15/20**。  

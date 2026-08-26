@@ -43,6 +43,16 @@ def get_rerank_pool() -> int:
 
 
 @lru_cache
+def is_crag_soft_fallback_enabled() -> bool:
+    """M6.27 / U-018：grade 两次仍 NONE 时，对非空检索做 soft-generate，降低误拒答。
+
+    默认开启。设 CRAG_SOFT_FALLBACK=0 可回到「硬 abstain」对比实验。
+    """
+    raw = os.getenv("CRAG_SOFT_FALLBACK", "1").strip().lower()
+    return raw in {"1", "true", "yes", "on"}
+
+
+@lru_cache
 def get_database_url() -> str:
     """M5.1：PostgreSQL 连接串（Docker 由 compose 注入，本地开发可在 .env 配置）。"""
     url = os.getenv("DATABASE_URL", "").strip()
