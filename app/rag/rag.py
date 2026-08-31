@@ -26,6 +26,7 @@ async def rag_chat(
         search_query=retrieval_query,
         pre_trace_steps=pre_steps,
         thread_id=tid,
+        anchor_candidate=extracted,
     )
     if early is not None:
         if early.strip():
@@ -71,5 +72,6 @@ async def prepare_rag_stream_async(
         search_query=retrieval_query,
         pre_trace_steps=pre_steps,
         thread_id=tid,
+        anchor_candidate=extracted,
     )
     return rag_prompt, sources, early, trace_id, extracted, user_message, plan_steps, tid

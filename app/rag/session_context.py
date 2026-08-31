@@ -9,6 +9,7 @@ from langchain_core.runnables.config import RunnableConfig
 MAX_TURN_HISTORY = 6
 USER_CONTENT_MAX = 500
 ASSISTANT_CONTENT_MAX = 800
+INCIDENT_ANCHOR_MAX = 240
 # generate 层写 turn_history 时 aupdate_state 必须指定 as_node（多节点图否则 Ambiguous update）
 TURN_HISTORY_AS_NODE = "merge"
 
@@ -20,6 +21,15 @@ REFERENTIAL_MARKERS = (
     "继续",
     "还影响",
     "然后呢",
+)
+
+# 用户明确换题时清空旧锚点（U-008 事故锚点）
+CLEAR_ANCHOR_MARKERS = (
+    "新告警",
+    "另一个问题",
+    "换个问题",
+    "新的问题",
+    "换一个故障",
 )
 
 TurnRole = Literal["user", "assistant"]
@@ -72,6 +82,56 @@ def enrich_question_with_history(question: str, history: list[dict]) -> str:
     if not prev:
         return text
     return f"{text}（上下文：上一轮用户问的是「{prev[:200]}」）"
+
+
+def _clip_anchor(text: str) -> str:
+    return text.strip()[:INCIDENT_ANCHOR_MAX]
+
+
+def wants_clear_anchor(question: str) -> bool:
+    return any(m in question for m in CLEAR_ANCHOR_MARKERS)
+
+
+def resolve_incident_anchor(
+    *,
+    query: str,
+    prior_anchor: str | None,
+    candidate: str | None = None,
+) -> tuple[str, str | None]:
+    """把「当前事故」钉进检索 query。
+
+    返回 ``(search_query, anchor_to_store)``。
+    - 无先验：用 candidate（读图）或 query 建锚点
+    - 有先验且未换题：检索前缀先验，锚点不变（避免跟进句劫持主题）
+    - 换题标记：丢弃先验，按本轮重建
+    """
+    q = query.strip()
+    cand = (candidate or "").strip()
+    if cand.upper() == "UNKNOWN":
+        cand = ""
+    prior = (prior_anchor or "").strip() or None
+
+    if wants_clear_anchor(q) or not prior:
+        seed = cand or q
+        anchor = _clip_anchor(seed) if seed else None
+        if anchor and q and anchor not in q:
+            return f"{anchor} {q}".strip(), anchor
+        return q or (anchor or ""), anchor
+
+    # 跟进轮：先验钉死检索，避免「反思 OOM」抢走主题
+    if prior in q:
+        return q, prior
+    return f"{prior} | {q}".strip(), prior
+
+
+def format_anchor_system_note(anchor: str | None) -> str | None:
+    text = (anchor or "").strip()
+    if not text:
+        return None
+    return (
+        f"当前事故锚点：{text}。"
+        "回答必须围绕该锚点；禁止改口成其他故障类型或引用无关 Runbook。"
+    )
 
 
 def trim_turn_history(history: list[dict]) -> list[dict]:

@@ -37,6 +37,7 @@
   - [x] **U-012 Chunk 消融** ✅（300/500/800 → 选用 500/50；见 [chunk_ablation.md](../../eval/reports/ablation/chunk_ablation.md)）
   - [x] **U-014 知识库工程 MVP** ✅（清洗 / 按 source 增量 / version 元数据 / 冲突重排）
   - [x] **U-031 RRF 权重消融** ✅（纯向量 / 多档 BM25 → 保留 1.0/0.35；见 [rrf_weight.md](../../eval/reports/ablation/rrf_weight.md)）
+  - [x] **U-008 事故锚点（增量）** ✅（`incident_anchor` 钉检索 + generate；摘要层仍未做）
   - [x] 前端质感升级：plan 时间线 + 对比加深 + 主/侧栏分层（保留秋色暖风）
 
 **项目场景**：**ShipLog — 研发 On-call 故障排查助手**（M5.2 起；M4 阶段为 DevKit 文档助手，见 [SCENARIO.md](../scenario/SCENARIO.md)）  

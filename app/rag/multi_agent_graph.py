@@ -1,5 +1,6 @@
 """M6.1：Multi-Agent 协调 + 专家分工 + 危险操作安全策略分支。
 M6.2：Planning 节点 + Postgres checkpointer 多轮 turn_history。
+U-008：incident_anchor 跨轮钉住当前事故（检索 + generate）。
 """
 
 from __future__ import annotations
@@ -20,8 +21,10 @@ from app.rag.checkpointer import get_async_checkpointer
 from app.rag.session import resolve_thread_id
 from app.rag.session_context import (
     enrich_question_with_history,
+    format_anchor_system_note,
     format_turn_history,
     graph_config,
+    resolve_incident_anchor,
 )
 from app.rag.trace import new_trace_id, save_trace
 from app.tools import _get_topology, _query_incident, _search_runbook
@@ -109,6 +112,7 @@ class MultiAgentState(TypedDict, total=False):
     trace_id: Required[str]
     search_query: str
     system_prompt: str | None
+    incident_anchor: str | None
     trace_steps: Annotated[list[dict], operator.add]
     turn_history: Annotated[list[dict], operator.add]
     plan_steps: list[str]
@@ -550,8 +554,9 @@ def _turn_invoke_payload(
     trace_id: str,
     search_query: str,
     system_prompt: str | None,
+    incident_anchor: str | None,
 ) -> MultiAgentState:
-    """每轮重置 ephemeral 字段；turn_history 由 checkpointer 保留。"""
+    """每轮重置 ephemeral 字段；turn_history 由 checkpointer 保留；锚点显式 Overwrite。"""
     return cast(
         MultiAgentState,
         {
@@ -560,6 +565,7 @@ def _turn_invoke_payload(
             "trace_id": trace_id,
             "search_query": search_query,
             "system_prompt": system_prompt,
+            "incident_anchor": Overwrite(incident_anchor),
             "trace_steps": Overwrite([]),
             "plan_steps": Overwrite([]),
             "safe_branch": Overwrite(False),
@@ -581,6 +587,7 @@ async def run_multi_agent_prepare(
     search_query: str | None = None,
     pre_trace_steps: list[dict] | None = None,
     thread_id: str | None = None,
+    anchor_candidate: str | None = None,
 ) -> tuple[str | None, list[dict], str | None, str, list[str], str]:
     """M6.1 Multi-Agent 预处理；M6.2 返回 plan_steps 与 thread_id。"""
     trace_id = new_trace_id()
@@ -590,16 +597,32 @@ async def run_multi_agent_prepare(
     config = graph_config(tid)
 
     prior = await graph.aget_state(config)
-    history = list((prior.values or {}).get("turn_history") or [])
+    prior_vals = prior.values or {}
+    history = list(prior_vals.get("turn_history") or [])
+    prior_anchor_raw = _unwrap_state_value(prior_vals.get("incident_anchor"))
+    prior_anchor = prior_anchor_raw if isinstance(prior_anchor_raw, str) else None
+
     enriched_query = enrich_question_with_history(query, history)
+    pinned_query, anchor = resolve_incident_anchor(
+        query=enriched_query,
+        prior_anchor=prior_anchor,
+        candidate=anchor_candidate,
+    )
+    anchor_note = format_anchor_system_note(anchor)
+    merged_system = system_prompt
+    if anchor_note:
+        merged_system = (
+            f"{anchor_note}\n\n{system_prompt}" if system_prompt else anchor_note
+        )
 
     result = await graph.ainvoke(
         _turn_invoke_payload(
             message=message,
             top_k=top_k,
             trace_id=trace_id,
-            search_query=enriched_query,
-            system_prompt=system_prompt,
+            search_query=pinned_query,
+            system_prompt=merged_system,
+            incident_anchor=anchor,
         ),
         config,
     )
@@ -614,6 +637,15 @@ async def run_multi_agent_prepare(
     steps = list(pre_trace_steps or []) + trace_steps
     if tid:
         steps = [{"step": "session", "thread_id": tid}] + steps
+    if anchor:
+        steps = [
+            {
+                "step": "incident_anchor",
+                "anchor": anchor,
+                "search_query": pinned_query,
+                "cleared": bool(prior_anchor and prior_anchor != anchor),
+            }
+        ] + steps
     save_trace(
         {
             "trace_id": trace_id,
