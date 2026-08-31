@@ -26,7 +26,7 @@ from app.rag.loader import DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SIZE  # noqa: E4
 from app.rag.store import get_index_stats  # noqa: E402
 from run_eval import calc_metrics, eval_one, load_questions  # noqa: E402
 
-OUTPUT = EVAL_DIR / "chunk_ablation.md"
+OUTPUT = EVAL_DIR / "reports" / "ablation" / "chunk_ablation.md"
 PY = sys.executable
 
 CONFIGS: list[tuple[int, int, str]] = [
@@ -139,6 +139,7 @@ def write_report(rows: list[AblationRow], winner: AblationRow) -> None:
             "",
         ]
     )
+    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT.write_text("\n".join(lines), encoding="utf-8")
     print(f"\nWrote {OUTPUT}")
 

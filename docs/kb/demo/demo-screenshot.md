@@ -1,6 +1,10 @@
 # M5.3 截图提问 · 手测步骤
 
 > 虚构告警截图，勿用真实公司内部监控图。可自己用画图工具做一张「Redis 连接超时」告警图。
+>
+> **本目录 sample 图**（与 curl 示例同路径）：
+> - `alert-redis.png` — Redis connection timeout（用例 1）
+> - `alert-pod-oom.png` — Kubernetes Pod OOMKilled（用例 2）
 
 ## 用例 1：只发截图
 

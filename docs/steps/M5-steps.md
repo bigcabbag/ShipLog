@@ -1,4 +1,4 @@
-# M5 分步指南：工程化 + ShipLog 场景
+﻿# M5 分步指南：工程化 + ShipLog 场景
 
 > 前置：M4 全部完成（含 M4.4 trace_id）。  
 > **业务场景**：M4 阶段为 DevKit 文档助手；**M5.2 起切换为 ShipLog On-call 助手**（见 [SCENARIO.md](../scenario/SCENARIO.md)）。  
@@ -89,7 +89,7 @@ rag_traces：
 
 ### 验收
 
-- `eval/run_eval.py` Recall@3 与 M4.3 Chroma 版 **持平**（记入 `eval/BASELINE.md`）
+- `eval/run_eval.py` Recall@3 与 M4.3 Chroma 版 **持平**（记入 `eval/reports/BASELINE.md`）
 - `GET /traces/{trace_id}` 从 PG 回放，中文 question 正常
 - `vector_count` / stats 接口仍可用
 
@@ -131,7 +131,7 @@ docs/kb/
 ### 验收
 
 - `import_docs.py` 后问 Runbook 题 → 回答带正确 `sources`
-- `eval/run_eval.py` 输出 ShipLog 版 Recall@3（记入 `eval/BASELINE.md`）
+- `eval/run_eval.py` 输出 ShipLog 版 Recall@3（记入 `eval/reports/BASELINE.md`）
 - CRAG 对「能否高峰 FLUSHALL」类危险题能拒答
 - Docker 一键启动 + import 后可 demo
 

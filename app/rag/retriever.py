@@ -2,6 +2,7 @@ from langchain_core.documents import Document
 
 from app.config import get_rerank_pool, is_rerank_enabled
 from app.rag.bm25_index import bm25_search, doc_key
+from app.rag.conflict import resolve_kb_conflicts
 from app.rag.reranker import rerank_documents
 from app.rag.store import get_vector_store
 
@@ -49,24 +50,35 @@ def _maybe_rerank(
     return rerank_documents(query, docs, top_k)
 
 
+def _finalize(docs: list[Document]) -> list[Document]:
+    """U-014：同主题冲突重排（不丢块，保召回）。"""
+    ordered, _notes = resolve_kb_conflicts(docs)
+    return ordered
+
+
 def retrieve(
     query: str,
     top_k: int = DEFAULT_TOP_K,
     *,
     hybrid: bool = True,
     use_rerank: bool | None = None,
+    vector_weight: float | None = None,
+    bm25_weight: float | None = None,
 ) -> list[Document]:
     """混合检索：向量（语义）+ BM25（关键词），RRF 融合；可选 CrossEncoder 精排。
 
     ``use_rerank`` 默认读 ``RERANK_ENABLED``（默认关闭，避免 CPU 首请求拉模型卡住）。
     开启时：粗排池 ``RERANK_POOL``（默认 20）→ rerank → Top-K。
+    ``vector_weight`` / ``bm25_weight`` 可覆盖默认 RRF 权重（U-031 消融用）。
     """
     enabled = is_rerank_enabled() if use_rerank is None else use_rerank
     coarse_k = get_rerank_pool() if enabled else top_k
+    vw = VECTOR_RRF_WEIGHT if vector_weight is None else float(vector_weight)
+    bw = BM25_RRF_WEIGHT if bm25_weight is None else float(bm25_weight)
 
     if not hybrid:
         pool = _vector_search(query, max(coarse_k, top_k))
-        return _maybe_rerank(query, pool, top_k, use_rerank=enabled)
+        return _finalize(_maybe_rerank(query, pool, top_k, use_rerank=enabled))
 
     pool_k = max(coarse_k, top_k * RRF_POOL_FACTOR, top_k)
     vector_docs = _vector_search(query, pool_k)
@@ -75,15 +87,15 @@ def retrieve(
     if not vector_docs and not sparse_docs:
         return []
     if not sparse_docs:
-        return _maybe_rerank(query, vector_docs, top_k, use_rerank=enabled)
+        return _finalize(_maybe_rerank(query, vector_docs, top_k, use_rerank=enabled))
     if not vector_docs:
-        return _maybe_rerank(query, sparse_docs, top_k, use_rerank=enabled)
+        return _finalize(_maybe_rerank(query, sparse_docs, top_k, use_rerank=enabled))
 
     fused = _rrf_fuse(
         [
-            (vector_docs, VECTOR_RRF_WEIGHT),
-            (sparse_docs, BM25_RRF_WEIGHT),
+            (vector_docs, vw),
+            (sparse_docs, bw),
         ],
         coarse_k if enabled else top_k,
     )
-    return _maybe_rerank(query, fused, top_k, use_rerank=enabled)
+    return _finalize(_maybe_rerank(query, fused, top_k, use_rerank=enabled))

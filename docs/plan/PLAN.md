@@ -1,4 +1,4 @@
-# 学习计划（左侧可见 · 随对话更新）
+﻿# 学习计划（左侧可见 · 随对话更新）
 
 > 工作区副本：在资源管理器打开 `docs/plan/PLAN.md` 即可。每次协作推进里程碑后，我会同步更新本文件。
 
@@ -34,7 +34,9 @@
   - [x] **M6.27 压低误拒答（U-018）** ✅（grade 偏召回 + soft-fallback；默认 `CRAG_SOFT_FALLBACK=1`）
   - [x] M6.3 `docs/PITCH.md` 3 分钟口述稿 ✅（README 简历化 **实习结束后再做** ≈ 一周后，U-019）
   - [x] **M6.4 场景面试 20 题自测** ✅（用户已完成，目标 ≥15/20）
-  - [x] **U-012 Chunk 消融** ✅（300/500/800 → 选用 500/50；见 [chunk_ablation.md](../../eval/chunk_ablation.md)）
+  - [x] **U-012 Chunk 消融** ✅（300/500/800 → 选用 500/50；见 [chunk_ablation.md](../../eval/reports/ablation/chunk_ablation.md)）
+  - [x] **U-014 知识库工程 MVP** ✅（清洗 / 按 source 增量 / version 元数据 / 冲突重排）
+  - [x] **U-031 RRF 权重消融** ✅（纯向量 / 多档 BM25 → 保留 1.0/0.35；见 [rrf_weight.md](../../eval/reports/ablation/rrf_weight.md)）
   - [x] 前端质感升级：plan 时间线 + 对比加深 + 主/侧栏分层（保留秋色暖风）
 
 **项目场景**：**ShipLog — 研发 On-call 故障排查助手**（M5.2 起；M4 阶段为 DevKit 文档助手，见 [SCENARIO.md](../scenario/SCENARIO.md)）  
@@ -42,7 +44,7 @@
 **秋招面经库**（外部面经收集 + 项目映射 + 升级 backlog）：[interview/README.md](../interview/README.md)  
 **简历分栏知识库**：[resume/README.md](../resume/README.md)（实习 / 项目各一份）
 
-**下一步**：实习收尾期间可巩固 [PITCH.md](../PITCH.md) / 选做 backlog（U-003 / U-014…）；**U-019 README 简历化等实习结束再开**（约一周）
+**下一步**：实习收尾期间可巩固 [PITCH.md](../PITCH.md) / 选做 backlog（U-003…）；**U-019 README 简历化等实习结束再开**（约一周）
 
 ## 协作方式：PR 流程（从 M3 起）
 
@@ -475,7 +477,7 @@ flowchart LR
 
 - RAG 完整链路：Load → Split → Embed → Store → Retrieve → Generate
 - 向量相似度（余弦）vs 关键词（BM25）vs 混合检索（RRF）
-- chunk size / overlap 对效果的影响（已跑 U-012：`eval/chunk_ablation.md`，选用 500/50）
+- chunk size / overlap 对效果的影响（已跑 U-012：`eval/reports/ablation/chunk_ablation.md`，选用 500/50）
 - Rerank 的作用和时机
 - 幻觉原因 + 缓解手段（引用、citation、评分、拒答）
 

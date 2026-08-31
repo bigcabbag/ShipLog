@@ -5,7 +5,7 @@
     uv run python eval/run_eval.py --top-k 5
     uv run python eval/run_eval.py --dense-only   # 纯向量对比
     uv run python eval/run_eval.py --rerank       # M6.25：RRF + CrossEncoder
-    uv run python eval/run_eval.py --output eval/retrieval_eval_result.md
+    uv run python eval/run_eval.py --output eval/reports/retrieval/retrieval_eval_result.md
 """
 
 from __future__ import annotations
@@ -18,6 +18,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 EVAL_DIR = Path(__file__).resolve().parent
+REPORTS_RETRIEVAL = EVAL_DIR / "reports" / "retrieval"
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 if str(EVAL_DIR) not in sys.path:
@@ -30,7 +31,7 @@ from app.rag.store import get_index_stats
 from report_md import format_retrieval_report
 
 QUESTIONS_PATH = Path(__file__).with_name("questions.json")
-DEFAULT_OUTPUT = Path(__file__).with_name("retrieval_eval_result.md")
+DEFAULT_OUTPUT = REPORTS_RETRIEVAL / "retrieval_eval_result.md"
 
 
 @dataclass
@@ -57,6 +58,8 @@ def eval_one(
     *,
     dense_only: bool = False,
     use_rerank: bool = False,
+    vector_weight: float | None = None,
+    bm25_weight: float | None = None,
 ) -> EvalRow:
     qid = str(item["id"])
     question = str(item["question"])
@@ -68,6 +71,8 @@ def eval_one(
         top_k=top_k,
         hybrid=not dense_only,
         use_rerank=use_rerank,
+        vector_weight=vector_weight,
+        bm25_weight=bm25_weight,
     )
     retrieved = [str(d.metadata.get("source", "")) for d in docs]
 

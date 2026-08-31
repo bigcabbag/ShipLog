@@ -1,4 +1,4 @@
-# M6 分步指南：Agent 演进 + 交付收尾
+﻿# M6 分步指南：Agent 演进 + 交付收尾
 
 > **前置**：M5 全部完成（M5.0～M5.3，含 PDF/截图）。  
 > **目标**：ShipLog On-call **Agent** 能力 + README/PITCH/面试自测。  
@@ -269,7 +269,7 @@ uv run python eval/run_eval.py --rerank --no-file
 ```
 
 - 单测通过  
-- `--rerank` 报告写入 `eval/retrieval_eval_result_rerank.md`（或 `--no-file` 只打控制台）  
+- `--rerank` 报告写入 `eval/reports/retrieval/retrieval_eval_result_rerank.md`（或 `--no-file` 只打控制台）  
 - `BASELINE.md` 记录有/无 Rerank 一行（库小可能 Recall 持平，仍可讲二阶段架构）  
 - 口述：「RRF 是多路粗排；CrossEncoder 看 query-doc 对，精排 Top-K」
 
@@ -296,7 +296,7 @@ uv run python eval/run_eval.py --rerank --no-file
 | 口径 | 答案级 faithfulness ≈ `1 − 幻觉率`（同实验组） |
 | 诚实边界 | ≠ RAGAS claim 级 faithfulness；未跑官方库 |
 | Case | q02（On-call 无 CRAG）、q08（有 CRAG 仍 HALLU） |
-| 文档 | [BASELINE.md](../eval/BASELINE.md)「与 RAGAS / faithfulness 对照」 |
+| 文档 | [BASELINE.md](../eval/reports/BASELINE.md)「与 RAGAS / faithfulness 对照」 |
 
 ### 验收
 
@@ -334,7 +334,7 @@ uv run python eval/run_eval.py --rerank --no-file
 
 - [x] 单测 soft / hard / empty 三路路由  
 - [x] trace `grade.reason=soft_fallback` 可回放  
-- [ ] （建议）`uv run python eval/run_gen_eval.py --output eval/gen_eval_result_v6.md` 刷新误拒答/幻觉数字（耗时长，见 U-020）
+- [ ] （建议）`uv run python eval/run_gen_eval.py --output eval/reports/generation/gen_eval_result_v6.md` 刷新误拒答/幻觉数字（耗时长，见 U-020）
 
 ### 场景题
 
@@ -361,7 +361,7 @@ uv run python eval/run_eval.py --rerank --no-file
 ### 要做的事（README 延后项）
 
 - README：场景、架构图、技术栈、Docker/PG 启动、eval 数字 + Agent 亮点
-- 链到 `eval/BASELINE.md`、`docs/PITCH.md`
+- 链到 `eval/reports/BASELINE.md`、`docs/PITCH.md`
 
 ### 验收
 
@@ -420,5 +420,5 @@ uv run python eval/run_eval.py --rerank --no-file
 
 ## 下一步
 
-**当前**：M6.4 自测 ✅；**U-012 Chunk 消融** ✅（选用 500/50，见 `eval/chunk_ablation.md`）；README（U-019）**等实习结束**再开。  
+**当前**：M6.4 自测 ✅；**U-012 Chunk 消融** ✅（选用 500/50，见 `eval/reports/ablation/chunk_ablation.md`）；README（U-019）**等实习结束**再开。  
 期间：巩固口述 [PITCH.md](../PITCH.md)；可选 backlog（U-003 / U-014 等），不催 README。

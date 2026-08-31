@@ -1,4 +1,4 @@
-# M4 分步指南：项目真实化 + 高 star 亮点
+﻿# M4 分步指南：项目真实化 + 高 star 亮点
 
 > 前置：M3 全栈完成并 PR 合并。  
 > 业务场景见 [SCENARIO.md](../scenario/SCENARIO.md)。  
@@ -69,7 +69,7 @@ flowchart LR
 
 - `eval/questions.json`：20 题，含 `question`、`expected_sources`、`should_abstain`
 - `eval/run_eval.py`：跑检索，输出 Recall@3
-- `eval/BASELINE.md`：记录 M2/M4.3 前后数字
+- `eval/reports/BASELINE.md`：记录 M2/M4.3 前后数字
 
 
 

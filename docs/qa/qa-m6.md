@@ -1,4 +1,4 @@
-# M6 面试问答卡 · Agent 演进 + 交付
+﻿# M6 面试问答卡 · Agent 演进 + 交付
 
 > 场景题为主，见 [qa-scenario-guide.md](./qa-scenario-guide.md)。
 
@@ -327,7 +327,7 @@
 **A：**
 
 1. **分层**：Recall 只保证「期望文件进 Top-K」；生成仍可能补文档没有的命令。  
-2. **Case**：q02「连接数打满」On-call 无 CRAG → `[HALLU]`（见 `gen_eval_result_v5.md`）。  
+2. **Case**：q02「连接数打满」On-call 无 CRAG → `[HALLU]`（见 `eval/reports/generation/gen_eval_result_v5.md`）。  
 3. **CRAG**：把幻觉 17.2%→11.5%，仍非零——grade 管相关，不管逐步溯源。  
 4. **本项目**：检索 `run_eval` + 生成 `run_gen_eval` 分开报。
 
@@ -418,7 +418,7 @@
 
 **A：**
 
-1. **指标**：ShipLog **38 题 scored**，**Recall@3 = 86.8%**，MRR ≈ 0.855（见 `eval/BASELINE.md`）。
+1. **指标**：ShipLog **38 题 scored**，**Recall@3 = 86.8%**，MRR ≈ 0.855（见 `eval/reports/BASELINE.md`）。
 2. **方法**：`eval/questions.json` 标注期望来源文件；`eval/run_eval.py` 只评检索层，不调 LLM。
 3. **Miss 解释**：5 道是知识库**故意不覆盖**的 On-call 场景（Prometheus、NetworkPolicy 等），用于测拒答，不算检索失败。
 4. **更好方案**：上线后 RAGAS context_recall + bad case 回流 eval。
@@ -461,7 +461,7 @@
 2. **根因**：`grade` 节点偏严，相关文档被判不相关 → 该答的也拒了。
 3. **trade-off**：On-call **宁可误拒也不编造 kubectl 命令**。
 4. **更好方案**：调 grade 阈值；加 Rerank 提升 Retrieve 质量后再 grade；分「必须拒答」与「可尝试回答」两类题。
-5. **本项目**：`eval/BASELINE.md` 生成层表；`graph.py` CRAG 节点。
+5. **本项目**：`eval/reports/BASELINE.md` 生成层表；`graph.py` CRAG 节点。
 
 ---
 

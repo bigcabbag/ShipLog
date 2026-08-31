@@ -359,7 +359,7 @@ async def upload_document(file: UploadFile = File(...)):
     save_path.write_bytes(content)
 
     try:
-        chunks = load_and_split_document(save_path)
+        chunks = load_and_split_document(save_path, source=file.filename)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:

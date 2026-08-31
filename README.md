@@ -73,7 +73,7 @@ uv run python main.py
 | `POST /chat/stream` | SSE 流式对话（M3.3+） |
 
 | 脚本 | `uv run python scripts/import_docs.py` 批量导入 `docs/*.md` |
-| 评估 | `uv run python eval/run_eval.py` 输出 Recall@3（见 [eval/BASELINE.md](./eval/BASELINE.md)） |
+| 评估 | `uv run python eval/run_eval.py` 输出 Recall@3（见 [eval/reports/BASELINE.md](./eval/reports/BASELINE.md)） |
 
 ## 学习进度
 

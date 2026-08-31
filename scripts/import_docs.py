@@ -40,16 +40,20 @@ def import_kb(*, chunk_size: int, chunk_overlap: int, clear: bool) -> None:
 
     total_chunks = 0
     for path in md_files:
+        source = path.relative_to(KB_DIR).as_posix()
         chunks = load_and_split_markdown(
-            path, chunk_size=chunk_size, chunk_overlap=chunk_overlap
+            path,
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+            source=source,
         )
         if not chunks:
             print(f"skip (empty): {path.name}")
             continue
-        source = path.relative_to(KB_DIR).as_posix()
         indexed = index_chunks(chunks, source=source)
         total_chunks += indexed
-        print(f"OK {source}: {indexed} chunks")
+        ver = chunks[0].metadata.get("doc_version", "?")
+        print(f"OK {source}: {indexed} chunks (v={ver})")
 
     stats = get_index_stats()
     bm25_count = rebuild_from_vector_store()

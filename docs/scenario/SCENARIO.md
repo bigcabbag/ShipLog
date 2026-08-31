@@ -1,4 +1,4 @@
-# 项目场景：ShipLog 研发 On-call 故障排查助手
+﻿# 项目场景：ShipLog 研发 On-call 故障排查助手
 
 > 本文档是项目的**业务场景 + 对标 GitHub + 里程碑**权威说明。  
 > 面试题见 [qa-scenario-guide.md](../qa/qa-scenario-guide.md) · 面经映射见 [interview/analysis/project-mapping.md](../interview/analysis/project-mapping.md)。
@@ -111,7 +111,7 @@ docs/kb/
 
 | 指标 | 含义 | 说明 |
 |------|------|------|
-| **Recall@3** | Top-3 含正确 Runbook/Postmortem | 主数字，写入 `eval/BASELINE.md` |
+| **Recall@3** | Top-3 含正确 Runbook/Postmortem | 主数字，写入 `eval/reports/BASELINE.md` |
 | **拒答准确率** | 库外/危险操作是否拒答 | ≥5 道拒答题 |
 | **Faithfulness** | 回答是否 grounded | M5.2 人工；后续可 RAGAS（backlog U-002） |
 

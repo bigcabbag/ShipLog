@@ -9,14 +9,14 @@
 ```powershell
 cd E:\01_Dev\langChain
 # 检索层
-uv run python eval/run_eval.py              # 混合检索（评测强制关 Rerank）→ retrieval_eval_result.md
-uv run python eval/run_eval.py --dense-only # 纯向量 → retrieval_eval_result_dense.md
-uv run python eval/run_eval.py --rerank     # M6.25：RRF + CrossEncoder → retrieval_eval_result_rerank.md
+uv run python eval/run_eval.py              # 混合检索 → reports/retrieval/retrieval_eval_result.md
+uv run python eval/run_eval.py --dense-only # 纯向量 → reports/retrieval/retrieval_eval_result_dense.md
+uv run python eval/run_eval.py --rerank     # M6.25：RRF + CE → reports/retrieval/retrieval_eval_result_rerank.md
 uv run python eval/run_eval.py --top-k 5
 
-# 生成层（需 .env 有 DEEPSEEK_API_KEY，约 18 分钟）→ eval/gen_eval_result.md
+# 生成层（需 .env 有 DEEPSEEK_API_KEY，约 18 分钟）→ reports/generation/gen_eval_result.md
 uv run python eval/run_gen_eval.py
-uv run python eval/run_gen_eval.py --output eval/gen_eval_result_v6.md  # 保留版本
+uv run python eval/run_gen_eval.py --output eval/reports/generation/gen_eval_result_v6.md  # 保留版本
 uv run python eval/run_gen_eval.py --limit 5  # 快速测试
 ```
 
@@ -71,7 +71,7 @@ uv run python eval/run_gen_eval.py --limit 5  # 快速测试
 | 有 CRAG + On-call prompt | 90.0% | 21.2% | **11.5%** | 完整 CRAG：检索→评分→改写/拒答 |
 
 > 数据由 `eval/run_gen_eval.py` 生成（~24min），幻觉率由 temperature=0 的 LLM 评估器逐条检查判定。  
-> 完整逐题日志见 [`eval/gen_eval_result_v5.md`](gen_eval_result_v5.md)（历史版本 v2–v4 同目录）。
+> 完整逐题日志见 [`generation/gen_eval_result_v5.md`](generation/gen_eval_result_v5.md)（历史版本 v2–v4 / v6 同目录）。
 
 ### 量化改进分析
 
@@ -124,7 +124,7 @@ uv run python eval/run_gen_eval.py --limit 5  # 快速测试
 | **q02** | 无 CRAG + On-call | `[HALLU]`「Redis 连接数打满了怎么办」 | 检索侧通常能命中 `redis-timeout.md`，但 On-call prompt 逼写具体命令，judge 判存在文档未覆盖细节 → **检索层 HIT ≠ 生成层 faithfulness** |
 | **q08** | 有 CRAG + On-call | `[HALLU]`「服务回滚怎么操作」 | 回答已引用 `runbooks/rollback.md`，CRAG 也放行，仍被判 HALLU → 说明 grade 管「相关」，不管「生成是否逐步可溯源」 |
 
-完整原文见 [`gen_eval_result_v5.md`](gen_eval_result_v5.md) 对应 `[HALLU]` 节。
+完整原文见 [`generation/gen_eval_result_v5.md`](generation/gen_eval_result_v5.md) 对应 `[HALLU]` 节。
 
 ### abstain 集（应拒答题，均不在知识库内）
 
