@@ -1,11 +1,17 @@
 from collections.abc import AsyncIterator
 from typing import Any
 
+import asyncio
+
 from app.llm import chat
 from app.rag.multi_agent_graph import run_multi_agent_prepare
 from app.rag.query import resolve_rag_inputs
 from app.rag.session import load_thread_history, record_thread_turn, resolve_thread_id
-from app.rag.sse_events import event_status, event_vision_extract
+from app.rag.sse_events import (
+    event_status,
+    event_vision_extract,
+    progress_queue_scope,
+)
 
 
 async def rag_chat(
@@ -23,16 +29,14 @@ async def rag_chat(
         image_media_type=image_media_type,
     )
     tid = resolve_thread_id(thread_id)
-    rag_prompt, sources, early, trace_id, plan_steps, _tid, _progress = (
-        await run_multi_agent_prepare(
-            user_message,
-            top_k=top_k,
-            system_prompt=system_prompt,
-            search_query=retrieval_query,
-            pre_trace_steps=pre_steps,
-            thread_id=tid,
-            anchor_candidate=extracted,
-        )
+    rag_prompt, sources, early, trace_id, plan_steps, _tid = await run_multi_agent_prepare(
+        user_message,
+        top_k=top_k,
+        system_prompt=system_prompt,
+        search_query=retrieval_query,
+        pre_trace_steps=pre_steps,
+        thread_id=tid,
+        anchor_candidate=extracted,
     )
     if early is not None:
         if early.strip():
@@ -59,6 +63,8 @@ async def iter_rag_stream_prepare(
 
     进度事件：``{"kind": "sse", "data": {...}}``
     就绪：``{"kind": "ready", "data": {rag_prompt, sources, early, ...}}``
+
+    ``tool_start`` / ``tool_end`` 在 specialists / safe_response **执行时**经 Queue 实时推送。
     """
     if image_base64:
         yield {
@@ -80,19 +86,32 @@ async def iter_rag_stream_prepare(
     }
 
     tid = resolve_thread_id(thread_id)
-    rag_prompt, sources, early, trace_id, plan_steps, tid, progress = (
-        await run_multi_agent_prepare(
-            user_message,
-            top_k=top_k,
-            system_prompt=system_prompt,
-            search_query=retrieval_query,
-            pre_trace_steps=pre_steps,
-            thread_id=tid,
-            anchor_candidate=extracted,
-        )
-    )
-    for ev in progress:
-        yield {"kind": "sse", "data": ev}
+    queue: asyncio.Queue = asyncio.Queue()
+
+    async def _run_prepare():
+        # ContextVar 必须在本 task 内 set，create_task 才会继承到图节点协程
+        with progress_queue_scope(queue):
+            try:
+                return await run_multi_agent_prepare(
+                    user_message,
+                    top_k=top_k,
+                    system_prompt=system_prompt,
+                    search_query=retrieval_query,
+                    pre_trace_steps=pre_steps,
+                    thread_id=tid,
+                    anchor_candidate=extracted,
+                )
+            finally:
+                await queue.put(None)
+
+    task = asyncio.create_task(_run_prepare())
+    while True:
+        item = await queue.get()
+        if item is None:
+            break
+        yield {"kind": "sse", "data": item}
+
+    rag_prompt, sources, early, trace_id, plan_steps, tid = await task
 
     yield {
         "kind": "ready",

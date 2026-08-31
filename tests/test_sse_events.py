@@ -1,6 +1,14 @@
-"""U-003：SSE 进度事件契约单测。"""
+"""U-003：SSE 进度事件契约 + 实时总线单测。"""
 
-from app.rag.sse_events import agent_progress_events, event_vision_extract
+import asyncio
+
+from app.rag.sse_events import (
+    emit_progress,
+    event_tool_end,
+    event_tool_start,
+    event_vision_extract,
+    progress_queue_scope,
+)
 
 
 def test_vision_extract_event_shape():
@@ -9,49 +17,49 @@ def test_vision_extract_event_shape():
     assert "DROP" in ev["extracted_query"]
 
 
-def test_agent_dispatch_and_result_to_tool_events():
-    steps = [
-        {
-            "step": "agent_dispatch",
-            "tasks": [
-                {"agent": "runbook", "args": {"query": "Redis 超时"}},
-                {"agent": "topology", "args": {"service": "order-service"}},
-            ],
-        },
-        {
-            "step": "agent_result",
-            "agent": "runbook",
-            "tool_name": "search_runbook",
-            "summary": "命中 redis-timeout",
-        },
-        {
-            "step": "agent_result",
-            "agent": "topology",
-            "tool_name": "get_service_topology",
-            "summary": "上下游 3 个",
-        },
-    ]
-    events = agent_progress_events(steps)
-    kinds = [e["event"] for e in events]
-    assert kinds == ["tool_start", "tool_start", "tool_end", "tool_end"]
-    assert events[0]["tool"] == "search_runbook"
-    assert events[1]["tool"] == "get_service_topology"
-    assert events[2]["summary"] == "命中 redis-timeout"
+def test_tool_event_shapes():
+    start = event_tool_start("runbook", args={"query": "Redis"})
+    end = event_tool_end("runbook", tool="search_runbook", summary="命中")
+    assert start == {
+        "event": "tool_start",
+        "tool": "search_runbook",
+        "agent": "runbook",
+        "args": {"query": "Redis"},
+    }
+    assert end["event"] == "tool_end"
+    assert end["summary"] == "命中"
 
 
-def test_safe_response_emits_status_and_tools():
-    events = agent_progress_events(
-        [
-            {
-                "step": "safe_response",
-                "route": "generate",
-                "agents_used": ["runbook", "incident"],
-            }
-        ]
-    )
-    assert events[0]["event"] == "status"
-    assert events[0]["phase"] == "safe_response"
-    kinds = [e["event"] for e in events[1:]]
-    assert kinds == ["tool_start", "tool_end", "tool_start", "tool_end"]
-    assert events[1]["tool"] == "search_runbook"
-    assert events[3]["tool"] == "query_incident"
+def test_emit_progress_live_queue():
+    async def _run() -> list[dict]:
+        queue: asyncio.Queue = asyncio.Queue()
+        received: list[dict] = []
+
+        async def producer() -> None:
+            with progress_queue_scope(queue):
+                await emit_progress(event_tool_start("topology", args={"service": "x"}))
+                await emit_progress(
+                    event_tool_end("topology", summary="上下游 2")
+                )
+            await queue.put(None)
+
+        async def consumer() -> None:
+            while True:
+                item = await queue.get()
+                if item is None:
+                    break
+                received.append(item)
+
+        await asyncio.gather(producer(), consumer())
+        return received
+
+    events = asyncio.run(_run())
+    assert [e["event"] for e in events] == ["tool_start", "tool_end"]
+    assert events[0]["tool"] == "get_service_topology"
+
+
+def test_emit_without_queue_is_noop():
+    async def _run() -> None:
+        await emit_progress(event_tool_start("runbook"))
+
+    asyncio.run(_run())  # 不抛错
