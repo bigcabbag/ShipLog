@@ -60,6 +60,12 @@ async def iter_rag_stream_prepare(
     进度事件：``{"kind": "sse", "data": {...}}``
     就绪：``{"kind": "ready", "data": {rag_prompt, sources, early, ...}}``
     """
+    if image_base64:
+        yield {
+            "kind": "sse",
+            "data": event_status("vision", "正在读图识别告警…"),
+        }
+
     user_message, retrieval_query, pre_steps, extracted = await resolve_rag_inputs(
         message,
         image_base64=image_base64,
@@ -101,47 +107,3 @@ async def iter_rag_stream_prepare(
             "thread_id": tid,
         },
     }
-
-
-async def prepare_rag_stream_async(
-    message: str,
-    *,
-    top_k: int = 3,
-    system_prompt: str | None = None,
-    image_base64: str | None = None,
-    image_media_type: str = "image/png",
-    thread_id: str | None = None,
-) -> tuple[
-    str | None,
-    list[dict],
-    str | None,
-    str,
-    str | None,
-    str,
-    list[str],
-    str,
-]:
-    """兼容旧调用：消费 iter_rag_stream_prepare，只返回 ready 元组。"""
-    ready: dict[str, Any] | None = None
-    async for item in iter_rag_stream_prepare(
-        message,
-        top_k=top_k,
-        system_prompt=system_prompt,
-        image_base64=image_base64,
-        image_media_type=image_media_type,
-        thread_id=thread_id,
-    ):
-        if item.get("kind") == "ready":
-            ready = item["data"]
-    if ready is None:
-        raise RuntimeError("RAG 流式准备未返回 ready")
-    return (
-        ready["rag_prompt"],
-        ready["sources"],
-        ready["early"],
-        ready["trace_id"],
-        ready["extracted"],
-        ready["user_message"],
-        ready["plan_steps"],
-        ready["thread_id"],
-    )

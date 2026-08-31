@@ -21,7 +21,11 @@ def event_vision_extract(extracted_query: str) -> dict:
 
 
 def agent_progress_events(steps: list[dict]) -> list[dict]:
-    """从 Multi-Agent trace steps 生成 tool_start / tool_end（稳定契约）。"""
+    """从 Multi-Agent trace steps 生成 tool_start / tool_end（稳定契约）。
+
+    注意：事件在 Agent **整段结束后**回放，不是逐 tool 实时；
+    前端文案应用过去时（已调度 / 已完成）。
+    """
     events: list[dict] = []
     for step in steps:
         kind = step.get("step")
@@ -57,4 +61,26 @@ def agent_progress_events(steps: list[dict]) -> list[dict]:
             events.append(
                 event_status("safe_response", "安全策略分支（危险操作提醒）")
             )
+            # safe 路径不走 agent_dispatch，补 tool 事件便于前端状态条
+            for agent in step.get("agents_used") or []:
+                name = str(agent).strip()
+                if not name:
+                    continue
+                tool = AGENT_TO_TOOL.get(name, name)
+                events.append(
+                    {
+                        "event": "tool_start",
+                        "tool": tool,
+                        "agent": name,
+                        "args": {},
+                    }
+                )
+                events.append(
+                    {
+                        "event": "tool_end",
+                        "tool": tool,
+                        "agent": name,
+                        "summary": "安全策略检索",
+                    }
+                )
     return events

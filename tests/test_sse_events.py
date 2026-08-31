@@ -39,7 +39,19 @@ def test_agent_dispatch_and_result_to_tool_events():
     assert events[2]["summary"] == "命中 redis-timeout"
 
 
-def test_safe_response_emits_status():
-    events = agent_progress_events([{"step": "safe_response", "route": "generate"}])
+def test_safe_response_emits_status_and_tools():
+    events = agent_progress_events(
+        [
+            {
+                "step": "safe_response",
+                "route": "generate",
+                "agents_used": ["runbook", "incident"],
+            }
+        ]
+    )
     assert events[0]["event"] == "status"
     assert events[0]["phase"] == "safe_response"
+    kinds = [e["event"] for e in events[1:]]
+    assert kinds == ["tool_start", "tool_end", "tool_start", "tool_end"]
+    assert events[1]["tool"] == "search_runbook"
+    assert events[3]["tool"] == "query_incident"

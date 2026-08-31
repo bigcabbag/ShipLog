@@ -72,11 +72,11 @@ function progressLabel(payload: SsePayload): string {
     return payload.message ?? "处理中…";
   }
   if (ev === "tool_start") {
-    return `调用工具 ${payload.tool ?? payload.agent ?? "…"}`;
+    return `已调度工具 ${payload.tool ?? payload.agent ?? "…"}`;
   }
   if (ev === "tool_end") {
     const tip = payload.summary ? `：${payload.summary}` : "";
-    return `工具完成 ${payload.tool ?? payload.agent ?? ""}${tip}`;
+    return `已完成工具 ${payload.tool ?? payload.agent ?? ""}${tip}`;
   }
   if (ev === "plan_steps") {
     return "已生成排查计划";
