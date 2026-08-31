@@ -10,14 +10,30 @@ export type ChatStreamDone = {
   plan_steps?: string[] | null;
 };
 
+/** U-003：中间进度（vision / tool / status / plan） */
+export type ChatStreamProgress = {
+  event: string;
+  message?: string;
+  phase?: string;
+  tool?: string;
+  agent?: string;
+  summary?: string;
+  extracted_query?: string;
+  plan_steps?: string[];
+  thread_id?: string | null;
+  args?: Record<string, unknown>;
+};
+
 export type ChatStreamHandlers = {
   onToken: (token: string) => void;
   onDone: (info: ChatStreamDone) => void;
   onExtracted?: (query: string) => void;
   onPlanSteps?: (steps: string[], threadId?: string | null) => void;
+  onProgress?: (progress: ChatStreamProgress) => void;
 };
 
 type SsePayload = {
+  event?: string;
   token?: string;
   done?: boolean;
   model?: string;
@@ -27,6 +43,13 @@ type SsePayload = {
   thread_id?: string | null;
   plan_steps?: string[] | null;
   error?: string;
+  warning?: string;
+  message?: string;
+  phase?: string;
+  tool?: string;
+  agent?: string;
+  summary?: string;
+  args?: Record<string, unknown>;
 };
 
 function parseSseDataLines(block: string): string[] {
@@ -40,9 +63,29 @@ function parseSseDataLines(block: string): string[] {
   return lines;
 }
 
+function progressLabel(payload: SsePayload): string {
+  const ev = payload.event ?? "";
+  if (ev === "vision_extract") {
+    return `读图识别：${payload.extracted_query ?? "…"}`;
+  }
+  if (ev === "status") {
+    return payload.message ?? "处理中…";
+  }
+  if (ev === "tool_start") {
+    return `调用工具 ${payload.tool ?? payload.agent ?? "…"}`;
+  }
+  if (ev === "tool_end") {
+    const tip = payload.summary ? `：${payload.summary}` : "";
+    return `工具完成 ${payload.tool ?? payload.agent ?? ""}${tip}`;
+  }
+  if (ev === "plan_steps") {
+    return "已生成排查计划";
+  }
+  return payload.message ?? ev;
+}
+
 /**
- * POST /chat/stream — 读 SSE，逐 token 回调；结束时 onDone。
- * 无 Abort：调用方在 loading 期间禁用发送即可。
+ * POST /chat/stream — 读 SSE；进度事件走 onProgress，token / done 同前。
  */
 export async function postChatStream(
   body: ChatRequestBody,
@@ -101,6 +144,21 @@ export async function postChatStream(
 
       if (payload.error) {
         throw new Error(payload.error);
+      }
+
+      if (payload.event && handlers.onProgress) {
+        handlers.onProgress({
+          event: payload.event,
+          message: progressLabel(payload),
+          phase: payload.phase,
+          tool: payload.tool,
+          agent: payload.agent,
+          summary: payload.summary,
+          extracted_query: payload.extracted_query,
+          plan_steps: payload.plan_steps ?? undefined,
+          thread_id: payload.thread_id ?? null,
+          args: payload.args,
+        });
       }
 
       if (payload.plan_steps?.length && handlers.onPlanSteps) {

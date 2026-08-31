@@ -26,6 +26,7 @@ from app.rag.session_context import (
     graph_config,
     resolve_incident_anchor,
 )
+from app.rag.sse_events import agent_progress_events
 from app.rag.trace import new_trace_id, save_trace
 from app.tools import _get_topology, _query_incident, _search_runbook
 
@@ -588,8 +589,8 @@ async def run_multi_agent_prepare(
     pre_trace_steps: list[dict] | None = None,
     thread_id: str | None = None,
     anchor_candidate: str | None = None,
-) -> tuple[str | None, list[dict], str | None, str, list[str], str]:
-    """M6.1 Multi-Agent 预处理；M6.2 返回 plan_steps 与 thread_id。"""
+) -> tuple[str | None, list[dict], str | None, str, list[str], str, list[dict]]:
+    """M6.1 Multi-Agent 预处理；M6.2 返回 plan_steps 与 thread_id；U-003 附带进度事件。"""
     trace_id = new_trace_id()
     query = (search_query or message).strip() or message
     tid = resolve_thread_id(thread_id)
@@ -633,6 +634,7 @@ async def run_multi_agent_prepare(
     sources = _state_dict_list(result.get("sources"))
     trace_steps = _state_dict_list(result.get("trace_steps"))
     plan_steps = _state_str_list(result.get("plan_steps"))
+    progress_events = agent_progress_events(trace_steps)
 
     steps = list(pre_trace_steps or []) + trace_steps
     if tid:
@@ -661,7 +663,7 @@ async def run_multi_agent_prepare(
     )
 
     if route == "abstain" or abstain_reply:
-        return None, [], abstain_reply, trace_id, plan_steps, tid
+        return None, [], abstain_reply, trace_id, plan_steps, tid, progress_events
 
     return (
         rag_prompt,
@@ -670,4 +672,5 @@ async def run_multi_agent_prepare(
         trace_id,
         plan_steps,
         tid,
+        progress_events,
     )

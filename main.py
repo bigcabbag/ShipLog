@@ -12,7 +12,7 @@ from fastapi.responses import HTMLResponse, StreamingResponse
 from app.config import get_embedding_model, get_settings
 from app.llm import chat, chat_stream
 from app.rag.checkpointer import close_async_checkpointer, get_async_checkpointer
-from app.rag.rag import prepare_rag_stream_async, rag_chat
+from app.rag.rag import iter_rag_stream_prepare, rag_chat
 from app.rag.session import load_thread_history, record_thread_turn, resolve_thread_id
 from app.rag.loader import (
     DEFAULT_CHUNK_OVERLAP,
@@ -208,7 +208,7 @@ async def chat_endpoint(body: ChatRequest):
 
 @app.post("/chat/stream")
 async def chat_stream_endpoint(body: ChatRequest):
-    """M3.3：SSE 流式对话。事件：{"token":"..."} 逐条推送，最后 {"done":true,"model":"...","sources":[...]}。"""
+    """M3.3 / U-003：SSE 流式。进度 event=vision_extract|status|tool_start|tool_end|plan_steps，再 token，最后 done。"""
 
     async def event_generator():
         try:
@@ -225,26 +225,38 @@ async def chat_stream_endpoint(body: ChatRequest):
             chat_history = await load_thread_history(thread_id)
 
             if body.use_rag:
-                (
-                    rag_prompt,
-                    raw_sources,
-                    early_reply,
-                    trace_id,
-                    extracted_query,
-                    stream_user_message,
-                    plan_steps,
-                    thread_id,
-                ) = await prepare_rag_stream_async(
+                ready: dict | None = None
+                async for item in iter_rag_stream_prepare(
                     body.message,
                     top_k=body.top_k,
                     system_prompt=body.system_prompt,
                     image_base64=body.image_base64,
                     image_media_type=body.image_media_type,
                     thread_id=thread_id,
-                )
+                ):
+                    kind = item.get("kind")
+                    if kind == "sse":
+                        yield _sse_event(item["data"])
+                    elif kind == "ready":
+                        ready = item["data"]
+
+                if ready is None:
+                    yield _sse_event({"error": "RAG 准备阶段未完成"})
+                    return
+
+                rag_prompt = ready["rag_prompt"]
+                raw_sources = ready["sources"]
+                early_reply = ready["early"]
+                trace_id = ready["trace_id"]
+                extracted_query = ready["extracted"]
+                stream_user_message = ready["user_message"]
+                plan_steps = ready["plan_steps"] or []
+                thread_id = ready["thread_id"]
+
                 if plan_steps:
                     yield _sse_event(
                         {
+                            "event": "plan_steps",
                             "plan_steps": plan_steps,
                             "thread_id": thread_id,
                         }

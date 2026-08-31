@@ -313,6 +313,21 @@
   color: var(--text-muted);
 }
 
+.chat-panel__stream-status {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 8px 0;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-muted);
+  background: var(--surface-muted, rgba(45, 38, 28, 0.04));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  word-break: break-word;
+}
+
 .chat-panel__typing {
   display: inline-flex;
   gap: 4px;

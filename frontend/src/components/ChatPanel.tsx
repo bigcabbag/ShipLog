@@ -48,6 +48,8 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
   const [threadId, setThreadId] = useState(initialThreadId);
   /** 用户在底部附近时自动跟滚；上滑阅读则暂停，避免流式抢滚动条 */
   const [stickToBottom, setStickToBottom] = useState(true);
+  /** U-003：SSE 中间状态文案 */
+  const [streamStatus, setStreamStatus] = useState<string | null>(null);
 
   function isNearBottom(el: HTMLDivElement): boolean {
     return el.scrollHeight - el.scrollTop - el.clientHeight <= NEAR_BOTTOM_PX;
@@ -118,6 +120,7 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
     setInput("");
     setPendingImage(null);
     setImageError(null);
+    setStreamStatus(null);
     setLoading(true);
 
     const body = {
@@ -151,7 +154,21 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
             }
             patchMessage(assistantId, { planSteps: steps });
           },
+          onProgress: (progress) => {
+            if (progress.message) {
+              setStreamStatus(progress.message);
+            }
+            if (progress.event === "vision_extract" && progress.extracted_query) {
+              patchMessage(assistantId, {
+                extractedQuery: progress.extracted_query,
+              });
+            }
+            if (progress.thread_id) {
+              setThreadId(progress.thread_id);
+            }
+          },
           onToken: (token) => {
+            setStreamStatus(null);
             setMessages((prev) =>
               prev.map((m) =>
                 m.id === assistantId
@@ -161,6 +178,7 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
             );
           },
           onDone: ({ model, sources, trace_id, extracted_query, thread_id, plan_steps }) => {
+            setStreamStatus(null);
             if (thread_id) {
               setThreadId(thread_id);
             }
@@ -174,6 +192,7 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
           },
         });
       } catch (err: unknown) {
+        setStreamStatus(null);
         const message = err instanceof Error ? err.message : "发送失败";
         setMessages((prev) => {
           const target = prev.find((m) => m.id === assistantId);
@@ -400,14 +419,14 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
               )}
             </article>
           ))}
-          {loading && streamOn && messages[messages.length - 1]?.role !== "assistant" && (
-            <p className="chat-panel__loading">
+          {loading && streamOn && (
+            <p className="chat-panel__stream-status" aria-live="polite">
               <span className="chat-panel__typing" aria-hidden="true">
                 <span className="chat-panel__typing-dot" />
                 <span className="chat-panel__typing-dot" />
                 <span className="chat-panel__typing-dot" />
               </span>
-              检索与生成中
+              {streamStatus ?? "检索与生成中"}
             </p>
           )}
           {loading && !streamOn && (
