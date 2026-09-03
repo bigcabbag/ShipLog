@@ -25,14 +25,14 @@
   - [x] M5.1 pgvector + trace 迁 PostgreSQL ✅
   - [x] M5.2 ShipLog 场景定稿 + eval ✅（Recall@3=86.8%、幻觉率 17.2%→11.5%）
   - [x] M5.3 **On-call 输入亮点**（PDF 热更新 + 截图）✅
-- [ ] **M6** Agent 演进 + 交付收尾 ← **仅剩 README** → [M6-steps.md](../steps/M6-steps.md) · [qa-m6.md](../qa/qa-m6.md)
+- [x] **M6** Agent 演进 + 交付收尾 → [M6-steps.md](../steps/M6-steps.md) · [qa-m6.md](../qa/qa-m6.md)
   - [x] M6.0 Tool Calling ✅（三 tool + trace 回放已验收）
   - [x] M6.1 Multi-Agent 分工 + 安全分支 ✅
   - [x] M6.2 On-call 会话记忆 + 多步规划 ✅（`d4e0bcd` + 补充：generate 层多轮）
   - [x] **M6.25 Reranker 二阶段重排（U-001）** ✅（RRF pool → bge-reranker → Top-K）
   - [x] **M6.26 Faithfulness 口径（U-002 轻量）** ✅（幻觉率↔答案级 faithfulness；未装 ragas 包）
   - [x] **M6.27 压低误拒答（U-018）** ✅（grade 偏召回 + soft-fallback；默认 `CRAG_SOFT_FALLBACK=1`）
-  - [x] M6.3 `docs/PITCH.md` 3 分钟口述稿 ✅（README 简历化 **实习结束后再做** ≈ 一周后，U-019）
+  - [x] M6.3 `README.md` 简历化 + `docs/PITCH.md` 3 分钟口述稿 ✅（U-019）
   - [x] **M6.4 场景面试 20 题自测** ✅（用户已完成，目标 ≥15/20）
   - [x] **U-012 Chunk 消融** ✅（300/500/800 → 选用 500/50；见 [chunk_ablation.md](../../eval/reports/ablation/chunk_ablation.md)）
   - [x] **U-014 知识库工程 MVP** ✅（清洗 / 按 source 增量 / version 元数据 / 冲突重排）
@@ -46,7 +46,7 @@
 **秋招面经库**（外部面经收集 + 项目映射 + 升级 backlog）：[interview/README.md](../interview/README.md)  
 **简历分栏知识库**：[resume/README.md](../resume/README.md)（实习 / 项目各一份）
 
-**下一步**：实习收尾期间可巩固 [PITCH.md](../PITCH.md) / 选做 backlog（U-003…）；**U-019 README 简历化等实习结束再开**（约一周）
+**下一步**：M6 已完成；可巩固 [PITCH.md](../PITCH.md)，或按需推进 [升级 backlog](../interview/upgrades/backlog.md) 中的 U-020（刷新生成评测）和 U-033（Agent 端到端评测）。
 
 ## 协作方式：PR 流程（从 M3 起）
 

@@ -138,4 +138,4 @@ On-call 值班时，工程师要在几分钟内判断：**先查什么、以前�
 - [x] 能区分 **三 tool、safe_response vs abstain、三种记忆**
 - [x] 被追问「你的贡献」：从 M4 eval/CRAG 到 M6 Agent/记忆，按里程碑讲
 
-**下一步**：README 简历化（U-019）**等实习结束后**再做；期间巩固本 PITCH；升级见 [interview/upgrades/backlog.md](./interview/upgrades/backlog.md)。
+**下一步**：README 简历化（U-019）已完成；可继续巩固本 PITCH，或按需推进 [interview/upgrades/backlog.md](./interview/upgrades/backlog.md) 中的生成评测刷新与 Agent 端到端评测。

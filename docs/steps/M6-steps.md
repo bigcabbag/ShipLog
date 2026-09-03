@@ -4,7 +4,7 @@
 > **目标**：ShipLog On-call **Agent** 能力 + README/PITCH/面试自测。  
 > M4/M5 的 CRAG 仍负责**检索质量**；M6.0～M6.2 负责 **Agent**；M6.3～M6.4 负责 **简历交付**。
 
-**当前进度：M6.0～M6.2 / M6.25～M6.27 / M6.4 ✅；M6.3 PITCH ✅、README 仍延后（U-019）。分支 `feature/m6-agent`。**
+**当前进度：M6.0～M6.4 / M6.25～M6.27 ✅；M6.3 的 README 简历化与 PITCH 均已完成（U-019）。分支 `feature/m6-agent`。**
 
 ---
 
@@ -30,7 +30,7 @@ flowchart LR
 | M6.25 | Reranker 二阶段重排（U-001） | `reranker.py`、`retriever.py`、eval | 「RRF 之后为什么还要 Rerank」 | ✅ |
 | M6.26 | Faithfulness 口径（U-002 轻量） | `BASELINE.md`、qa、backlog | 「Retrieve 命中为何仍幻觉」 | ✅ |
 | M6.27 | 压低误拒答（U-018） | `graph.py` grade + soft-fallback、`config` | 「CRAG 误拒答怎么降」 | ✅ |
-| M6.3 | README 简历化 + `PITCH.md` | `README.md`、`docs/PITCH.md` | 「3 分钟介绍 ShipLog」 | PITCH ✅ / README **实习结束后** |
+| M6.3 | README 简历化 + `PITCH.md` | `README.md`、`docs/PITCH.md` | 「3 分钟介绍 ShipLog」 | ✅ |
 | **M6.4** | **场景面试 20 题自测** | `qa-m6.md` | 场景题 ≥15/20 | ✅ |
 
 > **编号说明**：  
@@ -355,10 +355,10 @@ uv run python eval/run_eval.py --rerank --no-file
 ### 进度
 
 - [x] `docs/PITCH.md`：背景 → 方案 → 指标 → 难点（3 分钟口述稿）
-- [ ] `README.md` 简历化（**等实习结束再做**，约一周后；= backlog U-019）
-- [ ] 更新 [SCENARIO.md](../scenario/SCENARIO.md) 与 README 链到 PITCH/eval
+- [x] `README.md`：场景、架构图、技术栈、Docker/PG 启动、评测数字和 Agent 亮点（U-019）
+- [x] README 已链接 [PITCH.md](../PITCH.md)、[项目场景](../scenario/SCENARIO.md) 与评测报告
 
-### 要做的事（README 延后项）
+### 已交付内容
 
 - README：场景、架构图、技术栈、Docker/PG 启动、eval 数字 + Agent 亮点
 - 链到 `eval/reports/BASELINE.md`、`docs/PITCH.md`
@@ -366,7 +366,7 @@ uv run python eval/run_eval.py --rerank --no-file
 ### 验收
 
 - [x] 能不看稿讲完全链路（PITCH）
-- [ ] 外人只看 README 知道解决什么问题、怎么跑（待 README）
+- [x] 外人只看 README 知道解决什么问题、怎么跑
 
 ### 场景题
 
@@ -420,5 +420,5 @@ uv run python eval/run_eval.py --rerank --no-file
 
 ## 下一步
 
-**当前**：M6.4 自测 ✅；**U-012 Chunk 消融** ✅（选用 500/50，见 `eval/reports/ablation/chunk_ablation.md`）；README（U-019）**等实习结束**再开。  
-期间：巩固口述 [PITCH.md](../PITCH.md)；可选 backlog（U-003 / U-014 等），不催 README。
+**当前**：M6 已完成；README（U-019）、M6.4 自测和 U-012 Chunk 消融均已交付。
+后续按需：重跑生成评测刷新 U-020，或补 U-033 Agent 端到端评测；期间可继续巩固 [PITCH.md](../PITCH.md)。
