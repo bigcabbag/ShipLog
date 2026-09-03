@@ -9,6 +9,20 @@
   },
   "cursorpyright.analysis.diagnosticMode": "workspace",
   "typescript.tsdk": "frontend/node_modules/typescript/lib",
+  "material-icon-theme.files.associations": {
+    "docker-compose.yml": "docker",
+    "docker-compose.yaml": "docker",
+    "compose.yml": "docker",
+    "compose.yaml": "docker"
+  },
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.expand": false,
+  "explorer.fileNesting.patterns": {
+    "docker-compose.yml": "Dockerfile, .dockerignore",
+    "pyproject.toml": "uv.lock, uv.lock.*, .python-version, pyrightconfig.json",
+    "README.md": ".env.example, .gitignore",
+    ".env.example": ".env, .env.local"
+  },
   "json.schemas": [
     {
       "fileMatch": ["frontend/tsconfig.json", "frontend/tsconfig.*.json"],

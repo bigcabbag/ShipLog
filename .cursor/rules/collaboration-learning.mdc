@@ -38,7 +38,7 @@ alwaysApply: true
 
 ### 3. 计划与文档同步
 
-- 权威进度：`docs/PLAN.md` 顶部「当前进度」清单
+- 权威进度：`docs/plan/PLAN.md` 顶部「当前进度」清单
 - 子步详情：`docs/Mx-steps.md`；完成后更新当前进度行
 - 面试卡：`docs/qa-m*.md`；新 milestone 完成时创建或更新
 - 不要只更新 Cursor 内部 plan 而忘记工作区文件
@@ -50,9 +50,23 @@ alwaysApply: true
 - 用户问「是不是误触」时：先 `git diff` 判断，误触则 restore，正常则 stage
 - Mx 最后子步（如 M3.5）才 push + 开 PR + merge
 
-### 5. 代码风格
+### 5. 代码风格与最小 diff（强制）
 
-- 最小改动：只写当前子步需要的代码
+**每次协作、每个子步，默认只做最小 diff**——能改 5 行解决问题，就不改 50 行；能不动无关文件，就不动。
+
+| 做 | 不做 |
+|----|------|
+| 只写**当前 Mx.y / 用户明确任务**需要的代码 | 顺手重构、重命名、改格式、抽「以后可能有用」的抽象 |
+| 复用已有函数/模块，在原有文件里增量改 | 为一步需求新建平行实现（除非子步文档已约定） |
+| 文档只更新 PLAN / Mx-steps / qa-mx 等**本步相关**处 | 批量改 README、无关 milestone 文档、用户未要的 markdown |
+| 问答题/修 bug 只动答案涉及的文件 | 借机推进下一个 milestone |
+
+**自检（改代码前默念）**：
+- [ ] 每个改动文件都能用「本步目标」一句话解释？
+- [ ] 有没有可以删掉的「顺手」改动？
+- [ ] 用户没要的文件/功能，我是否可以先不做？
+
+其他约定：
 - 匹配现有目录：`app/` 后端、`frontend/src/api/` 封装请求、`frontend/src/components/` 组件
 - 前端 API 地址统一走 `frontend/src/config.ts` 的 `API_BASE_URL`
 - 开发期 CORS 已在 `main.py` 配置，前端直连 `8000`
@@ -84,9 +98,9 @@ frontend/src/
   config.ts          # API 基址
   api/               # 请求封装（health、chat…）
   components/        # UI 组件
-docs/PLAN.md         # 总进度
-docs/SCENARIO.md     # 真实业务场景 + GitHub 对标
-docs/Mx-steps.md     # 子步指南
-docs/qa-mx.md        # 概念题（复习）
-docs/qa-scenario-guide.md  # 场景题规范 + 面经模板
+docs/plan/PLAN.md         # 总进度
+docs/scenario/SCENARIO.md     # 真实业务场景 + GitHub 对标
+docs/steps/Mx-steps.md     # 子步指南
+docs/qa/qa-mx.md        # 概念题（复习）
+docs/qa/qa-scenario-guide.md  # 场景题规范 + 面经模板
 ```

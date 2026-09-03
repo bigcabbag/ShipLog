@@ -13,6 +13,7 @@ export type ChatRequestBody = {
   system_prompt?: string | null;
   image_base64?: string | null;
   image_media_type?: string;
+  thread_id?: string | null;
 };
 
 export type ChatResponseBody = {
@@ -21,6 +22,8 @@ export type ChatResponseBody = {
   sources: SourceChunk[] | null;
   trace_id?: string | null;
   extracted_query?: string | null;
+  thread_id?: string | null;
+  plan_steps?: string[] | null;
 };
 
 export async function postChat(body: ChatRequestBody): Promise<ChatResponseBody> {

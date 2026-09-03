@@ -1,7 +1,7 @@
-# 项目场景：ShipLog 研发 On-call 故障排查助手
+﻿# 项目场景：ShipLog 研发 On-call 故障排查助手
 
 > 本文档是项目的**业务场景 + 对标 GitHub + 里程碑**权威说明。  
-> 面试题见 [qa-scenario-guide.md](./qa/qa-scenario-guide.md) · 面经映射见 [interview/analysis/project-mapping.md](./interview/analysis/project-mapping.md)。
+> 面试题见 [qa-scenario-guide.md](../qa/qa-scenario-guide.md) · 面经映射见 [interview/analysis/project-mapping.md](../interview/analysis/project-mapping.md)。
 
 ---
 
@@ -111,7 +111,7 @@ docs/kb/
 
 | 指标 | 含义 | 说明 |
 |------|------|------|
-| **Recall@3** | Top-3 含正确 Runbook/Postmortem | 主数字，写入 `eval/BASELINE.md` |
+| **Recall@3** | Top-3 含正确 Runbook/Postmortem | 主数字，写入 `eval/reports/BASELINE.md` |
 | **拒答准确率** | 库外/危险操作是否拒答 | ≥5 道拒答题 |
 | **Faithfulness** | 回答是否 grounded | M5.2 人工；后续可 RAGAS（backlog U-002） |
 
@@ -138,7 +138,7 @@ PDF/截图 demo 题：**手测**，不进主 eval 20 题。
 | M6.3 | README + PITCH |
 | M6.4 | 场景面试 20 题 |
 
-详见 [M5-steps.md](./steps/M5-steps.md) · [M6-steps.md](./steps/M6-steps.md)
+详见 [M5-steps.md](../steps/M5-steps.md) · [M6-steps.md](../steps/M6-steps.md)
 
 ---
 
@@ -152,6 +152,6 @@ PDF/截图 demo 题：**手测**，不进主 eval 20 题。
 
 ## 10. 参考
 
-- [美团 Agent 面经映射](./interview/analysis/project-mapping.md)
-- [升级 backlog](./interview/upgrades/backlog.md)
-- [qa-scenario-guide.md](./qa/qa-scenario-guide.md)
+- [美团 Agent 面经映射](../interview/analysis/project-mapping.md)
+- [升级 backlog](../interview/upgrades/backlog.md)
+- [qa-scenario-guide.md](../qa/qa-scenario-guide.md)

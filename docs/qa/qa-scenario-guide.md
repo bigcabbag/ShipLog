@@ -38,7 +38,7 @@
 - **做法**：建 `eval/questions.json` 20 题，每题标注期望来源文档；跑 `eval/run_eval.py` 算 **Recall@3**（正确 chunk 是否出现在 Top-3）。
 - **基线**：M2 纯向量约 XX%；M4.3 加 BM25 混合后提升 XX%（有数字才能讲）。
 - **更好方案**：上线后用 RAGAS 的 context_recall + faithfulness；生产采样 bad case 回流 eval 集。
-- **本项目**：M4.1 实现，见 `docs/SCENARIO.md`。
+- **本项目**：M4.1 实现，见 `docs/scenario/SCENARIO.md`。
 
 ---
 

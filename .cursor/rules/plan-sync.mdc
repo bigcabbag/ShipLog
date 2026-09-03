@@ -1,5 +1,5 @@
 ---
-description: 学习计划必须同步到 docs/PLAN.md，便于在左侧资源管理器查看
+description: 学习计划必须同步到 docs/plan/PLAN.md，便于在左侧资源管理器查看
 alwaysApply: true
 ---
 
@@ -7,10 +7,10 @@ alwaysApply: true
 
 在本项目（E:\langChain）中制定、修改或推进学习计划时：
 
-1. **主副本位置**：`docs/PLAN.md`（必须在左侧文件树可见）
-2. **每次更新 plan**（里程碑完成、任务变更、下一步调整）时，**同步更新** `docs/PLAN.md`
-3. 在 `docs/PLAN.md` 顶部维护 **「当前进度」** 清单，标明已完成里程碑和下一步
-4. 面试问答卡放在 `docs/qa-m*.md`，在 PLAN 里链接到对应文件
+1. **主副本位置**：`docs/plan/PLAN.md`（必须在左侧文件树可见）
+2. **每次更新 plan**（里程碑完成、任务变更、下一步调整）时，**同步更新** `docs/plan/PLAN.md`
+3. 在 `docs/plan/PLAN.md` 顶部维护 **「当前进度」** 清单，标明已完成里程碑和下一步
+4. 面试问答卡放在 `docs/qa/qa-m*.md`，在 PLAN 里链接到对应文件
 5. 不要只在 Cursor 内部 `.cursor/plans/` 更新而忘记同步工作区文件
 
 用户习惯在左侧直接打开计划跟进学习，工作区副本是权威阅读来源。

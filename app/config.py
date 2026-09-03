@@ -4,21 +4,51 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+# 必须最先：修 HF 镜像（含热补 huggingface_hub.constants），再让其它包 import hub
+import app.hf_bootstrap  # noqa: F401
+from app.hf_bootstrap import ensure_hf_mirror
+
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 _ENV_FILE = _PROJECT_ROOT / ".env"
 
 load_dotenv(_ENV_FILE, encoding="utf-8-sig")
-
-
-# 国内默认走 HuggingFace 镜像（可在 .env 里覆盖 HF_ENDPOINT）
-_hf_endpoint = os.getenv("HF_ENDPOINT", "").strip()
-if not _hf_endpoint:
-    os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
+ensure_hf_mirror()
 
 
 @lru_cache
 def get_embedding_model() -> str:
     return os.getenv("EMBEDDING_MODEL", "BAAI/bge-small-zh-v1.5").strip()
+
+
+@lru_cache
+def is_rerank_enabled() -> bool:
+    """M6.25：二阶段 Rerank。默认关闭（CPU/Docker 首请求会拉模型）；演示设 RERANK_ENABLED=1。"""
+    raw = os.getenv("RERANK_ENABLED", "0").strip().lower()
+    return raw in {"1", "true", "yes", "on"}
+
+
+@lru_cache
+def get_rerank_model() -> str:
+    return os.getenv("RERANK_MODEL", "BAAI/bge-reranker-base").strip()
+
+
+@lru_cache
+def get_rerank_pool() -> int:
+    """RRF/向量粗排池大小，再交给 CrossEncoder 截断到最终 top_k。"""
+    try:
+        return max(1, int(os.getenv("RERANK_POOL", "20").strip() or "20"))
+    except ValueError:
+        return 20
+
+
+@lru_cache
+def is_crag_soft_fallback_enabled() -> bool:
+    """M6.27 / U-018：grade 两次仍 NONE 时，对非空检索做 soft-generate，降低误拒答。
+
+    默认开启。设 CRAG_SOFT_FALLBACK=0 可回到「硬 abstain」对比实验。
+    """
+    raw = os.getenv("CRAG_SOFT_FALLBACK", "1").strip().lower()
+    return raw in {"1", "true", "yes", "on"}
 
 
 @lru_cache

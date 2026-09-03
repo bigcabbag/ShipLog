@@ -1,5 +1,9 @@
 ﻿from pathlib import Path
 import json
+from contextlib import asynccontextmanager
+
+# 国内 HF 镜像：须先于任何可能间接 import huggingface_hub 的依赖
+import app.hf_bootstrap  # noqa: F401
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,7 +11,9 @@ from fastapi.responses import HTMLResponse, StreamingResponse
 
 from app.config import get_embedding_model, get_settings
 from app.llm import chat, chat_stream
-from app.rag.rag import prepare_rag_stream_async, rag_chat
+from app.rag.checkpointer import close_async_checkpointer, get_async_checkpointer
+from app.rag.rag import iter_rag_stream_prepare, rag_chat
+from app.rag.session import load_thread_history, record_thread_turn, resolve_thread_id
 from app.rag.loader import (
     DEFAULT_CHUNK_OVERLAP,
     DEFAULT_CHUNK_SIZE,
@@ -35,7 +41,14 @@ def _sse_event(payload: dict) -> str:
     return f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
 
 
-app = FastAPI(title="RAG Agent", version="0.1.0")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await get_async_checkpointer()
+    yield
+    await close_async_checkpointer()
+
+
+app = FastAPI(title="RAG Agent", version="0.1.0", lifespan=lifespan)
 
 # Docker 经 frontend nginx 同源反代时可不依赖 CORS；保留供直连 8032 / 本地调试
 app.add_middleware(
@@ -143,12 +156,13 @@ async def chat_endpoint(body: ChatRequest):
     try:
         settings = get_settings()
         if body.use_rag:
-            reply, raw_sources, trace_id, extracted = await rag_chat(
+            reply, raw_sources, trace_id, extracted, plan_steps, thread_id = await rag_chat(
                 body.message,
                 top_k=body.top_k,
                 system_prompt=body.system_prompt,
                 image_base64=body.image_base64,
                 image_media_type=body.image_media_type,
+                thread_id=body.thread_id,
             )
             sources = [SourceChunk(**item) for item in raw_sources] or None
             return ChatResponse(
@@ -157,12 +171,24 @@ async def chat_endpoint(body: ChatRequest):
                 sources=sources,
                 trace_id=trace_id,
                 extracted_query=extracted,
+                thread_id=thread_id,
+                plan_steps=plan_steps or None,
             )
 
         if body.image_base64:
             raise HTTPException(status_code=400, detail="截图提问需开启 use_rag")
-        reply = await chat(body.message, body.system_prompt)
-        return ChatResponse(reply=reply, model=settings["model"])
+        tid = resolve_thread_id(body.thread_id)
+        history = await load_thread_history(tid)
+        reply = await chat(body.message, body.system_prompt, history=history)
+        if reply.strip():
+            try:
+                await record_thread_turn(tid, user=body.message, assistant=reply)
+            except Exception as exc:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"回复已生成，但会话保存失败: {exc}",
+                ) from exc
+        return ChatResponse(reply=reply, model=settings["model"], thread_id=tid)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except RuntimeError as exc:
@@ -182,7 +208,7 @@ async def chat_endpoint(body: ChatRequest):
 
 @app.post("/chat/stream")
 async def chat_stream_endpoint(body: ChatRequest):
-    """M3.3：SSE 流式对话。事件：{"token":"..."} 逐条推送，最后 {"done":true,"model":"...","sources":[...]}。"""
+    """M3.3 / U-003：SSE 流式。进度 event=vision_extract|status|tool_start|tool_end|plan_steps，再 token，最后 done。"""
 
     async def event_generator():
         try:
@@ -194,23 +220,59 @@ async def chat_stream_endpoint(body: ChatRequest):
             extracted_query: str | None = None
 
             stream_user_message = body.message or "请根据截图排查。"
+            plan_steps: list[str] = []
+            thread_id = resolve_thread_id(body.thread_id)
+            chat_history = await load_thread_history(thread_id)
 
             if body.use_rag:
-                (
-                    rag_prompt,
-                    raw_sources,
-                    early_reply,
-                    trace_id,
-                    extracted_query,
-                    stream_user_message,
-                ) = await prepare_rag_stream_async(
+                ready: dict | None = None
+                async for item in iter_rag_stream_prepare(
                     body.message,
                     top_k=body.top_k,
                     system_prompt=body.system_prompt,
                     image_base64=body.image_base64,
                     image_media_type=body.image_media_type,
-                )
+                    thread_id=thread_id,
+                ):
+                    kind = item.get("kind")
+                    if kind == "sse":
+                        yield _sse_event(item["data"])
+                    elif kind == "ready":
+                        ready = item["data"]
+
+                if ready is None:
+                    yield _sse_event({"error": "RAG 准备阶段未完成"})
+                    return
+
+                rag_prompt = ready["rag_prompt"]
+                raw_sources = ready["sources"]
+                early_reply = ready["early"]
+                trace_id = ready["trace_id"]
+                extracted_query = ready["extracted"]
+                stream_user_message = ready["user_message"]
+                plan_steps = ready["plan_steps"] or []
+                thread_id = ready["thread_id"]
+
+                if plan_steps:
+                    yield _sse_event(
+                        {
+                            "event": "plan_steps",
+                            "plan_steps": plan_steps,
+                            "thread_id": thread_id,
+                        }
+                    )
                 if early_reply is not None:
+                    if early_reply.strip():
+                        try:
+                            await record_thread_turn(
+                                thread_id,
+                                user=stream_user_message,
+                                assistant=early_reply,
+                            )
+                        except Exception as exc:
+                            yield _sse_event(
+                                {"warning": f"回复已生成，但会话保存失败: {exc}"}
+                            )
                     yield _sse_event({"token": early_reply})
                     yield _sse_event(
                         {
@@ -219,14 +281,35 @@ async def chat_stream_endpoint(body: ChatRequest):
                             "sources": [],
                             "trace_id": trace_id,
                             "extracted_query": extracted_query,
+                            "thread_id": thread_id,
+                            "plan_steps": plan_steps,
                         },
                     )
                     return
                 stream_prompt = rag_prompt
                 sources = raw_sources
 
-            async for token in chat_stream(stream_user_message, system_prompt=stream_prompt):
+            full_reply: list[str] = []
+            async for token in chat_stream(
+                stream_user_message,
+                system_prompt=stream_prompt,
+                history=chat_history,
+            ):
+                full_reply.append(token)
                 yield _sse_event({"token": token})
+
+            reply_text = "".join(full_reply)
+            if reply_text.strip():
+                try:
+                    await record_thread_turn(
+                        thread_id,
+                        user=stream_user_message,
+                        assistant=reply_text,
+                    )
+                except Exception as exc:
+                    yield _sse_event(
+                        {"warning": f"回复已生成，但会话保存失败: {exc}"}
+                    )
 
             yield _sse_event(
                 {
@@ -235,6 +318,8 @@ async def chat_stream_endpoint(body: ChatRequest):
                     "sources": sources,
                     "trace_id": trace_id,
                     "extracted_query": extracted_query,
+                    "thread_id": thread_id,
+                    "plan_steps": plan_steps,
                 }
             )
         except ValueError as exc:
@@ -286,7 +371,7 @@ async def upload_document(file: UploadFile = File(...)):
     save_path.write_bytes(content)
 
     try:
-        chunks = load_and_split_document(save_path)
+        chunks = load_and_split_document(save_path, source=file.filename)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:

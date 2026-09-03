@@ -1,7 +1,7 @@
-# M4 分步指南：项目真实化 + 高 star 亮点
+﻿# M4 分步指南：项目真实化 + 高 star 亮点
 
 > 前置：M3 全栈完成并 PR 合并。  
-> 业务场景见 [SCENARIO.md](./SCENARIO.md)。  
+> 业务场景见 [SCENARIO.md](../scenario/SCENARIO.md)。  
 > 场景面试题见 [qa-scenario-guide.md](../qa/qa-scenario-guide.md)。
 
 **当前进度：M4 已全部合并 master（下一步 M5.0 Docker）**
@@ -69,7 +69,7 @@ flowchart LR
 
 - `eval/questions.json`：20 题，含 `question`、`expected_sources`、`should_abstain`
 - `eval/run_eval.py`：跑检索，输出 Recall@3
-- `eval/BASELINE.md`：记录 M2/M4.3 前后数字
+- `eval/reports/BASELINE.md`：记录 M2/M4.3 前后数字
 
 
 

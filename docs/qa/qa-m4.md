@@ -1,7 +1,7 @@
-# DevKit 文档助手 — M4 面试问答
+﻿# DevKit 文档助手 — M4 面试问答
 
 > 场景题规范见 [qa-scenario-guide.md](./qa-scenario-guide.md)  
-> 业务场景见 [SCENARIO.md](./SCENARIO.md)
+> 业务场景见 [SCENARIO.md](../scenario/SCENARIO.md)
 
 ---
 
@@ -141,7 +141,7 @@
 
 1. **现象**：没指标像 Demo。
 2. **答法**：`eval/questions.json` 20 题，标 `expected_sources`；`run_eval.py` 出 Recall@3。
-3. **数字**：M4.1 纯向量 **94.4%**（17/18），见 `eval/BASELINE.md`。
+3. **数字**：M4.1 纯向量 **94.4%**（17/18），见 `eval/reports/BASELINE.md`。
 4. **更好方案**：上线后 RAGAS + bad case 回流 eval。
 5. **本项目**：`eval/run_eval.py` + `retriever.py`。
 
@@ -179,7 +179,7 @@
 2. **根因**：embedding 模型每次联网校验。
 3. **步骤**：先成功跑一次 import 缓存模型；再 `HF_HUB_OFFLINE=1` 跑 eval。
 4. **更好方案**：CI 预缓存模型；或固定本地 embedding 路径。
-5. **本项目**：`eval/BASELINE.md` 说明。
+5. **本项目**：`eval/reports/BASELINE.md` 说明。
 
 ---
 

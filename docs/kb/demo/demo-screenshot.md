@@ -1,6 +1,11 @@
 # M5.3 截图提问 · 手测步骤
 
 > 虚构告警截图，勿用真实公司内部监控图。可自己用画图工具做一张「Redis 连接超时」告警图。
+>
+> **本目录 sample 图**（与 curl 示例同路径）：
+> - `alert-redis.png` — Redis connection timeout（用例 1）
+> - `alert-pod-oom.png` — Kubernetes Pod OOMKilled（用例 2）
+> - `alert-db-drop.png` — prod DB DROP / 无 Runbook 危险告警（用例 3）
 
 ## 用例 1：只发截图
 
@@ -18,10 +23,10 @@
 1. 贴 Pod OOM 相关截图 + 文字「第一步查什么？」
 2. **期望**：检索 query 合并读图结果与用户文字；命中 `runbooks/pod-oom.md`
 
-## 用例 3：无关截图
+## 用例 3：无关 / 危险无覆盖截图
 
-1. 贴一张与 ShipLog 无关的 UI 截图
-2. **期望**：CRAG 拒答或「未找到相关 Runbook」，不编造 kubectl 命令
+1. 贴 `alert-db-drop.png`（prod `DROP DATABASE`，知识库无对应 Runbook）
+2. **期望**：CRAG 拒答或「未找到相关 Runbook」，不编造 `DROP`/`kubectl`/恢复命令；不假装能止血
 
 ## curl 调试（可选）
 

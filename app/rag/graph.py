@@ -1,4 +1,7 @@
-"""M4.2：LangGraph CRAG — retrieve → grade → rewrite | generate | abstain."""
+"""M4.2：LangGraph CRAG — retrieve → grade → rewrite | generate | abstain.
+
+M6.27 / U-018：放宽 grade 口径；改写后仍 NONE 时可选 soft-fallback（非空检索→谨慎生成）。
+"""
 
 from __future__ import annotations
 
@@ -9,22 +12,27 @@ from typing import Annotated, Literal, Required, TypedDict
 from langchain_core.documents import Document
 from langgraph.graph import END, START, StateGraph
 
+from app.config import is_crag_soft_fallback_enabled
 from app.llm import chat
 from app.rag.context import RAG_SYSTEM_PROMPT, build_context
 from app.rag.retriever import retrieve
 from app.rag.trace import doc_entry, new_trace_id, save_trace
- 
+
 MAX_REWRITES = 1
 
-GRADE_PROMPT = """你是检索质量评估员。判断文档片段是否能帮助回答用户问题。
+GRADE_PROMPT = """你是检索质量评估员。判断文档片段是否与用户问题相关。
+
+判定标准（偏召回，降低误拒答）：
+- 片段能提供排查线索、相关命令、症状/原因/步骤中的任一部分 → 算相关
+- 同一服务/同一故障域的 Runbook 或复盘，即使不能完整回答 → 仍算相关
+- 只有主题完全无关（例如问 Redis，文档全是无关业务）→ 才输出 NONE
 
 用户问题：{question}
 
 文档片段：
 {docs}
 
-哪些片段与问题相关且可用于回答？只输出相关编号（逗号分隔，如 1,3）。
-若全部不相关，只输出 NONE。"""
+输出相关编号（逗号分隔，如 1,3）。若全部不相关，只输出 NONE。"""
 
 REWRITE_PROMPT = """用户原问题：{question}
 
@@ -33,6 +41,16 @@ REWRITE_PROMPT = """用户原问题：{question}
 
 ABSTAIN_EMPTY_KB = "知识库中暂无 Runbook 文档，请先运行 import_docs.py 导入知识库。"
 ABSTAIN_NO_RELEVANT = "知识库中未找到相关 Runbook，无法回答该问题。建议查阅官方文档或联系 SRE。"
+
+SOFT_FALLBACK_NOTE = """
+注意：相关性评分未选出高相关片段，以下为检索 Top 结果（soft-fallback）。
+请严格只根据参考文档作答；若不足以给出可执行步骤，明确说明不确定，禁止编造 shell 命令或配置。
+"""
+
+GRADE_SYSTEM_PROMPT = (
+    "你是文档相关性评审：能提供排查线索或同域背景即算相关；"
+    "只有完全无关才输出 NONE。只输出编号或 NONE。"
+)
 
 
 class CragState(TypedDict, total=False):
@@ -46,9 +64,25 @@ class CragState(TypedDict, total=False):
     relevant_docs: list[Document]
     rewrite_count: int
     route: Literal["generate", "rewrite", "abstain"]
+    soft_fallback: bool
     abstain_reply: str
     rag_prompt: str
     sources: list[dict]
+
+
+def decide_route_when_no_relevant(
+    *,
+    rewrite_count: int,
+    documents: list[Document],
+    soft_fallback_enabled: bool,
+    max_rewrites: int = MAX_REWRITES,
+) -> Literal["rewrite", "abstain", "soft_generate"]:
+    """grade 得到空相关集时的路由（纯函数，便于单测 / U-018）。"""
+    if rewrite_count < max_rewrites:
+        return "rewrite"
+    if soft_fallback_enabled and documents:
+        return "soft_generate"
+    return "abstain"
 
 
 def _format_docs_for_grade(docs: list[Document]) -> str:
@@ -107,13 +141,14 @@ async def _grade_node(state: CragState) -> dict:
             question=state["question"],
             docs=_format_docs_for_grade(docs),
         ),
-        system_prompt="你是严格的文档相关性评审，只输出编号或 NONE。",
+        system_prompt=GRADE_SYSTEM_PROMPT,
     )
     relevant = _parse_grade_response(raw, docs)
     if relevant:
         return {
             "relevant_docs": relevant,
             "route": "generate",
+            "soft_fallback": False,
             "trace_steps": [
                 {
                     "step": "grade",
@@ -123,7 +158,13 @@ async def _grade_node(state: CragState) -> dict:
                 }
             ],
         }
-    if state.get("rewrite_count", 0) < MAX_REWRITES:
+
+    decision = decide_route_when_no_relevant(
+        rewrite_count=int(state.get("rewrite_count", 0)),
+        documents=docs,
+        soft_fallback_enabled=is_crag_soft_fallback_enabled(),
+    )
+    if decision == "rewrite":
         return {
             "route": "rewrite",
             "trace_steps": [
@@ -135,9 +176,26 @@ async def _grade_node(state: CragState) -> dict:
                 }
             ],
         }
+    if decision == "soft_generate":
+        return {
+            "relevant_docs": docs,
+            "route": "generate",
+            "soft_fallback": True,
+            "abstain_reply": "",
+            "trace_steps": [
+                {
+                    "step": "grade",
+                    "route": "generate",
+                    "reason": "soft_fallback",
+                    "grade_raw": raw.strip()[:200],
+                    "relevant": [doc_entry(d, i) for i, d in enumerate(docs, start=1)],
+                }
+            ],
+        }
     return {
         "route": "abstain",
         "abstain_reply": ABSTAIN_NO_RELEVANT,
+        "soft_fallback": False,
         "trace_steps": [
             {
                 "step": "grade",
@@ -174,6 +232,9 @@ async def _build_generate_node(state: CragState) -> dict:
     docs = state.get("relevant_docs") or []
     context, sources = build_context(docs)
     rag_prompt = RAG_SYSTEM_PROMPT.format(context=context)
+    soft = bool(state.get("soft_fallback"))
+    if soft:
+        rag_prompt = f"{SOFT_FALLBACK_NOTE.strip()}\n\n{rag_prompt}"
     system_prompt = state.get("system_prompt")
     if system_prompt:
         rag_prompt = f"{system_prompt}\n\n{rag_prompt}"
@@ -184,6 +245,7 @@ async def _build_generate_node(state: CragState) -> dict:
             {
                 "step": "build_generate",
                 "source_count": len(sources),
+                "soft_fallback": soft,
                 "sources": [s.get("source") for s in sources],
             }
         ],
@@ -239,6 +301,29 @@ def get_crag_graph():
     return builder.compile()
 
 
+async def run_crag_invoke(
+    message: str,
+    *,
+    top_k: int = 3,
+    system_prompt: str | None = None,
+    search_query: str | None = None,
+) -> dict:
+    """执行 CRAG 图，返回完整 state（不写入 trace）。"""
+    graph = get_crag_graph()
+    query = (search_query or message).strip() or message
+    return await graph.ainvoke(
+        {
+            "question": message,
+            "search_query": query,
+            "top_k": top_k,
+            "trace_id": new_trace_id(),
+            "trace_steps": [],
+            "system_prompt": system_prompt,
+            "rewrite_count": 0,
+        }
+    )
+
+
 async def run_crag_prepare(
     message: str,
     *,
@@ -246,37 +331,40 @@ async def run_crag_prepare(
     system_prompt: str | None = None,
     search_query: str | None = None,
     pre_trace_steps: list[dict] | None = None,
+    persist_trace: bool = True,
 ) -> tuple[str | None, list[dict], str | None, str]:
     """CRAG 预处理：返回 rag_prompt、sources、early_reply、trace_id。"""
     trace_id = new_trace_id()
-    graph = get_crag_graph()
-    query = (search_query or message).strip() or message
-    result = await graph.ainvoke(
-        {
-            "question": message,
-            "search_query": query,
-            "top_k": top_k,
-            "trace_id": trace_id,
-            "trace_steps": [],
-            "system_prompt": system_prompt,
-            "rewrite_count": 0,
-        }
+    result = await run_crag_invoke(
+        message,
+        top_k=top_k,
+        system_prompt=system_prompt,
+        search_query=search_query,
     )
 
     steps = list(pre_trace_steps or []) + (result.get("trace_steps") or [])
-    save_trace(
-        {
-            "trace_id": trace_id,
-            "question": message,
-            "top_k": top_k,
-            "route": result.get("route"),
-            "rewrite_count": result.get("rewrite_count", 0),
-            "steps": steps,
-            "abstain_reply": result.get("abstain_reply"),
-        }
-    )
+    soft_fallback = bool(result.get("soft_fallback"))
+    if persist_trace:
+        save_trace(
+            {
+                "trace_id": trace_id,
+                "question": message,
+                "top_k": top_k,
+                "route": result.get("route"),
+                "rewrite_count": result.get("rewrite_count", 0),
+                "soft_fallback": soft_fallback,
+                "steps": steps,
+                "abstain_reply": result.get("abstain_reply"),
+            }
+        )
 
-    if result.get("route") == "abstain" or result.get("abstain_reply"):
-        return None, [], result.get("abstain_reply", ABSTAIN_NO_RELEVANT), trace_id
+    # 仅以 route 判定拒答；勿用 abstain_reply 或然性（soft-fallback 走 generate）
+    if result.get("route") == "abstain":
+        return (
+            None,
+            [],
+            result.get("abstain_reply") or ABSTAIN_NO_RELEVANT,
+            trace_id,
+        )
 
     return result.get("rag_prompt"), result.get("sources") or [], None, trace_id

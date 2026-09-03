@@ -7,7 +7,7 @@
 
 用法（项目根目录，需先 import_docs + .env 有 DEEPSEEK_API_KEY）：
     uv run python eval/run_gen_eval.py
-    uv run python eval/run_gen_eval.py --output eval/gen_eval_result_v6.md
+    uv run python eval/run_gen_eval.py --output eval/reports/generation/gen_eval_result_v6.md
     uv run python eval/run_gen_eval.py --limit 5
 """
 
@@ -21,10 +21,13 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 EVAL_DIR = Path(__file__).resolve().parent
+REPORTS_GENERATION = EVAL_DIR / "reports" / "generation"
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 if str(EVAL_DIR) not in sys.path:
     sys.path.insert(0, str(EVAL_DIR))
+
+import app.hf_bootstrap  # noqa: E402, F401
 
 from app.llm import chat
 from app.rag.context import RAG_SYSTEM_PROMPT, build_context
@@ -33,7 +36,7 @@ from app.rag.store import get_index_stats
 from report_md import format_gen_report
 
 QUESTIONS_PATH = Path(__file__).with_name("questions.json")
-DEFAULT_OUTPUT = Path(__file__).with_name("gen_eval_result.md")
+DEFAULT_OUTPUT = REPORTS_GENERATION / "gen_eval_result.md"
 
 GENERIC_PROMPT = """你是一个知识库助手。请根据以下参考文档回答问题。
 如果参考文档中没有相关信息，请说「未找到相关信息」。

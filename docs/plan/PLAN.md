@@ -1,42 +1,52 @@
-# 学习计划（左侧可见 · 随对话更新）
+﻿# 学习计划（左侧可见 · 随对话更新）
 
-> 工作区副本：在资源管理器打开 `docs/PLAN.md` 即可。每次协作推进里程碑后，我会同步更新本文件。
+> 工作区副本：在资源管理器打开 `docs/plan/PLAN.md` 即可。每次协作推进里程碑后，我会同步更新本文件。
 
 ## 当前进度
 
-- [x] **M0** 环境：uv + Python 3.12 + FastAPI `/health`
-- [x] **M1** 首个 LLM：DeepSeek + `/chat` + [qa-m1.md](./qa/qa-m1.md)
-- [x] **M2** 基础 RAG：PDF 上传 → 切块 → 检索 → 问答 → [qa-m2.md](./qa/qa-m2.md)
-- [x] **M3** 全栈：React 前端 + SSE 流式 → [M3-steps.md](./steps/M3-steps.md) · [qa-m3.md](./qa/qa-m3.md) · PR [#1](https://github.com/bigcabbag/rag-agent/pull/1) 已合并
+- [x] **M0** 环境：uv + Python 3.12 + FastAPI `/health` → [M0-steps.md](../steps/M0-steps.md) · [qa-m0.md](../qa/qa-m0.md)
+- [x] **M1** 首个 LLM：DeepSeek + `/chat` → [M1-steps.md](../steps/M1-steps.md) · [qa-m1.md](../qa/qa-m1.md)
+- [x] **M2** 基础 RAG：PDF 上传 → 切块 → 检索 → 问答 → [qa-m2.md](../qa/qa-m2.md)
+- [x] **M3** 全栈：React 前端 + SSE 流式 → [M3-steps.md](../steps/M3-steps.md) · [qa-m3.md](../qa/qa-m3.md) · PR [#1](https://github.com/bigcabbag/rag-agent/pull/1) 已合并
   - [x] M3.0 开分支 + Vite/React 脚手架 + CORS
   - [x] M3.1 聊天页（非流式 `POST /chat`）
   - [x] M3.2 上传 PDF + 向量库统计 UI
   - [x] M3.3 后端 `POST /chat/stream` SSE
   - [x] M3.4 前端流式 + 打字机效果
   - [x] M3.5 联调 polish + 问答卡 + PR 合并
-- [x] **M4** 真实化 + 亮点 → [SCENARIO.md](./SCENARIO.md) · [M4-steps.md](./steps/M4-steps.md) · [qa-m4.md](./qa/qa-m4.md) · PR [#2](https://github.com/bigcabbag/rag-agent/pull/2) 已合并
+- [x] **M4** 真实化 + 亮点 → [SCENARIO.md](../scenario/SCENARIO.md) · [M4-steps.md](../steps/M4-steps.md) · [qa-m4.md](../qa/qa-m4.md) · PR [#2](https://github.com/bigcabbag/rag-agent/pull/2) 已合并
   - [x] M4.0 Markdown 入库 + DevKit 场景 README
   - [x] M4.1 评估集 20 题 + Recall@3
   - [x] M4.2 LangGraph CRAG（对标 agentic-rag-for-dummies）
   - [x] M4.3 BM25+向量 RRF（对标 CliffsCai）
   - [x] M4.4 trace_id 检索日志
-- [x] **M5** 工程化 + ShipLog 场景 ← **进行中** → [M5-steps.md](./steps/M5-steps.md) · [qa-m5.md](./qa/qa-m5.md)
+- [x] **M5** 工程化 + ShipLog 场景 → [M5-steps.md](../steps/M5-steps.md) · [qa-m5.md](../qa/qa-m5.md) · PR [#3](https://github.com/bigcabbag/rag-agent/pull/3) **已合并**
   - [x] M5.0 Docker Compose ✅
   - [x] M5.1 pgvector + trace 迁 PostgreSQL ✅
   - [x] M5.2 ShipLog 场景定稿 + eval ✅（Recall@3=86.8%、幻觉率 17.2%→11.5%）
-  - [x] M5.3 **On-call 输入亮点**（PDF 热更新 + 截图）← 代码已完成，待验收
-- [ ] **M6** Agent 演进 + 交付收尾 → [M6-steps.md](./steps/M6-steps.md)
-  - [ ] M6.0 Tool Calling
-  - [ ] M6.1 Multi-Agent 分工 + 安全分支
-  - [ ] M6.2 On-call 会话记忆 + 多步规划
-  - [ ] M6.3 README 简历化 + `PITCH.md`（原 M5.3）
-  - [ ] M6.4 场景面试 20 题自测（原 M5.5）
+  - [x] M5.3 **On-call 输入亮点**（PDF 热更新 + 截图）✅
+- [x] **M6** Agent 演进 + 交付收尾 → [M6-steps.md](../steps/M6-steps.md) · [qa-m6.md](../qa/qa-m6.md)
+  - [x] M6.0 Tool Calling ✅（三 tool + trace 回放已验收）
+  - [x] M6.1 Multi-Agent 分工 + 安全分支 ✅
+  - [x] M6.2 On-call 会话记忆 + 多步规划 ✅（`d4e0bcd` + 补充：generate 层多轮）
+  - [x] **M6.25 Reranker 二阶段重排（U-001）** ✅（RRF pool → bge-reranker → Top-K）
+  - [x] **M6.26 Faithfulness 口径（U-002 轻量）** ✅（幻觉率↔答案级 faithfulness；未装 ragas 包）
+  - [x] **M6.27 压低误拒答（U-018）** ✅（grade 偏召回 + soft-fallback；默认 `CRAG_SOFT_FALLBACK=1`）
+  - [x] M6.3 `README.md` 简历化 + `docs/PITCH.md` 3 分钟口述稿 ✅（U-019）
+  - [x] **M6.4 场景面试 20 题自测** ✅（用户已完成，目标 ≥15/20）
+  - [x] **U-012 Chunk 消融** ✅（300/500/800 → 选用 500/50；见 [chunk_ablation.md](../../eval/reports/ablation/chunk_ablation.md)）
+  - [x] **U-014 知识库工程 MVP** ✅（清洗 / 按 source 增量 / version 元数据 / 冲突重排）
+  - [x] **U-031 RRF 权重消融** ✅（纯向量 / 多档 BM25 → 保留 1.0/0.35；见 [rrf_weight.md](../../eval/reports/ablation/rrf_weight.md)）
+  - [x] **U-008 事故锚点（增量）** ✅（`incident_anchor` 钉检索 + generate；摘要层仍未做）
+  - [x] **U-003 SSE 多事件** ✅（vision/status/tool_*/plan_steps + 前端状态条；tool_* 经 Queue 实时推送）
+  - [x] 前端质感升级：plan 时间线 + 对比加深 + 主/侧栏分层（保留秋色暖风）
 
-**项目场景**：**ShipLog — 研发 On-call 故障排查助手**（M5.2 起；M4 阶段为 DevKit 文档助手，见 [SCENARIO.md](./SCENARIO.md)）  
-**面试题规则**：每步出**场景题**（面经驱动），见 [qa-scenario-guide.md](./qa/qa-scenario-guide.md)  
-**秋招面经库**（外部面经收集 + 项目映射 + 升级 backlog）：[interview/README.md](./interview/README.md)
+**项目场景**：**ShipLog — 研发 On-call 故障排查助手**（M5.2 起；M4 阶段为 DevKit 文档助手，见 [SCENARIO.md](../scenario/SCENARIO.md)）  
+**面试题规则**：每步出**场景题**（面经驱动），见 [qa-scenario-guide.md](../qa/qa-scenario-guide.md)  
+**秋招面经库**（外部面经收集 + 项目映射 + 升级 backlog）：[interview/README.md](../interview/README.md)  
+**简历分栏知识库**：[resume/README.md](../resume/README.md)（实习 / 项目各一份）
 
-**下一步**：说 **「继续 M5.3」** 验收 PDF + 截图；通过后 **「继续 M6.0」**
+**下一步**：M6 已完成；可巩固 [PITCH.md](../PITCH.md)，或按需推进 [升级 backlog](../interview/upgrades/backlog.md) 中的 U-020（刷新生成评测）和 U-033（Agent 端到端评测）。
 
 ## 协作方式：PR 流程（从 M3 起）
 
@@ -469,7 +479,7 @@ flowchart LR
 
 - RAG 完整链路：Load → Split → Embed → Store → Retrieve → Generate
 - 向量相似度（余弦）vs 关键词（BM25）vs 混合检索（RRF）
-- chunk size / overlap 对效果的影响
+- chunk size / overlap 对效果的影响（已跑 U-012：`eval/reports/ablation/chunk_ablation.md`，选用 500/50）
 - Rerank 的作用和时机
 - 幻觉原因 + 缓解手段（引用、citation、评分、拒答）
 
@@ -515,9 +525,9 @@ flowchart LR
 
 ## 下一步
 
-**M1 已完成**：DeepSeek `/chat` 可用，见 [qa-m1.md](./qa/qa-m1.md)。
+**M1 已完成**：DeepSeek `/chat` 可用，见 [qa-m1.md](../qa/qa-m1.md)。
 
-**下次有空（M2）**：验收 M2.3（`/chat` + `use_rag: true`），见 [qa-m2.md](./qa/qa-m2.md)。
+**下次有空（M2）**：验收 M2.3（`/chat` + `use_rag: true`），见 [qa-m2.md](../qa/qa-m2.md)。
 
 **忙公司项目时**：复习 qa-m1，偶尔跑通 `/health` 和 `/chat` 即可。
 

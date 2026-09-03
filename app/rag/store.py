@@ -4,6 +4,8 @@
 retriever.py 依赖 store._collection.count()，用 PGVectorAdapter 兼容。
 """
 
+import app.hf_bootstrap  # noqa: F401
+
 from langchain_core.documents import Document
 from langchain_postgres import PGVector
 from sqlalchemy import create_engine, text
@@ -73,27 +75,56 @@ def get_vector_store() -> PGVectorAdapter:
     return PGVectorAdapter(store, conn)
 
 
-def index_chunks(chunks: list[Document], source: str) -> int:
-    """把切块写入 PG + BM25；同名文件会先删旧再写入。"""
-    sync_chunks(chunks, source)
-
-    store = get_vector_store()
+def clear_collection() -> int:
+    """清空当前向量集合全部 embedding（切块消融 / 全量重建前用）。"""
     engine = create_engine(get_database_url())
-    with engine.connect() as conn:
+    deleted = 0
+    with engine.begin() as conn:
         result = conn.execute(
             text(
-                "SELECT c.uuid FROM langchain_pg_collection c "
-                "JOIN langchain_pg_embedding e ON c.uuid = e.collection_id "
-                "WHERE c.name = :name AND e.cmetadata->>'source' = :source"
+                """
+                DELETE FROM langchain_pg_embedding e
+                USING langchain_pg_collection c
+                WHERE e.collection_id = c.uuid AND c.name = :name
+                """
+            ),
+            {"name": COLLECTION_NAME},
+        )
+        deleted = int(result.rowcount or 0)
+    # BM25 随 rebuild_from_vector_store / 空库同步
+    from app.rag.bm25_index import _save_records
+
+    _save_records([])
+    return deleted
+
+
+def delete_by_source(source: str) -> int:
+    """按 metadata.source 删除向量行（增量覆盖的正确实现）。"""
+    engine = create_engine(get_database_url())
+    with engine.begin() as conn:
+        result = conn.execute(
+            text(
+                """
+                DELETE FROM langchain_pg_embedding e
+                USING langchain_pg_collection c
+                WHERE e.collection_id = c.uuid
+                  AND c.name = :name
+                  AND e.cmetadata->>'source' = :source
+                """
             ),
             {"name": COLLECTION_NAME, "source": source},
         )
-        ids = [str(row[0]) for row in result]
+        return int(result.rowcount or 0)
 
-    if ids:
-        store._store.delete(ids=ids)
 
+def index_chunks(chunks: list[Document], source: str) -> int:
+    """把切块写入 PG + BM25；同 source 先删旧再写（U-014 增量替换）。"""
+    sync_chunks(chunks, source)
+    deleted = delete_by_source(source)
+    store = get_vector_store()
     store._store.add_documents(chunks)
+    # deleted 仅用于排查；返回仍是本次写入块数
+    _ = deleted
     return len(chunks)
 
 

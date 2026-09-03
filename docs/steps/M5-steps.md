@@ -1,7 +1,7 @@
-# M5 分步指南：工程化 + ShipLog 场景
+﻿# M5 分步指南：工程化 + ShipLog 场景
 
 > 前置：M4 全部完成（含 M4.4 trace_id）。  
-> **业务场景**：M4 阶段为 DevKit 文档助手；**M5.2 起切换为 ShipLog On-call 助手**（见 [SCENARIO.md](./SCENARIO.md)）。  
+> **业务场景**：M4 阶段为 DevKit 文档助手；**M5.2 起切换为 ShipLog On-call 助手**（见 [SCENARIO.md](../scenario/SCENARIO.md)）。  
 > **M5 共四步**（M5.0～M5.3）；M5.3 完成后进入 [M6-steps.md](./M6-steps.md)（Agent + 简历交付）。
 
 **当前进度：M5.3 代码已交付（PDF 热更新沿用 upload + 截图思路 A），待本地验收。**
@@ -89,7 +89,7 @@ rag_traces：
 
 ### 验收
 
-- `eval/run_eval.py` Recall@3 与 M4.3 Chroma 版 **持平**（记入 `eval/BASELINE.md`）
+- `eval/run_eval.py` Recall@3 与 M4.3 Chroma 版 **持平**（记入 `eval/reports/BASELINE.md`）
 - `GET /traces/{trace_id}` 从 PG 回放，中文 question 正常
 - `vector_count` / stats 接口仍可用
 
@@ -119,7 +119,7 @@ docs/kb/
 
 | 文件 | 改动 |
 |------|------|
-| `scripts/import_docs.py` | 扫描 `docs/kb/**/*.md`，**不**索引 `docs/PLAN.md` 等学习文档 |
+| `scripts/import_docs.py` | 扫描 `docs/kb/**/*.md`，**不**索引 `docs/plan/PLAN.md` 等学习文档 |
 | `app/rag/context.py` | Runbook 助手 prompt；强调**禁止编造 shell 命令** |
 | `app/rag/graph.py` | `REWRITE_PROMPT` 改为 Runbook/Postmortem 语境 |
 | `frontend/.../ChatPanel.tsx` | 标题 + 示例问题（如「Redis 超时第一步查什么？」） |
@@ -131,7 +131,7 @@ docs/kb/
 ### 验收
 
 - `import_docs.py` 后问 Runbook 题 → 回答带正确 `sources`
-- `eval/run_eval.py` 输出 ShipLog 版 Recall@3（记入 `eval/BASELINE.md`）
+- `eval/run_eval.py` 输出 ShipLog 版 Recall@3（记入 `eval/reports/BASELINE.md`）
 - CRAG 对「能否高峰 FLUSHALL」类危险题能拒答
 - Docker 一键启动 + import 后可 demo
 
