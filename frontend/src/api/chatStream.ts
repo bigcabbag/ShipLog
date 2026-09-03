@@ -154,7 +154,7 @@ export async function postChatStream(
           tool: payload.tool,
           agent: payload.agent,
           summary: payload.summary,
-          extracted_query: payload.extracted_query,
+          extracted_query: payload.extracted_query ?? undefined,
           plan_steps: payload.plan_steps ?? undefined,
           thread_id: payload.thread_id ?? null,
           args: payload.args,

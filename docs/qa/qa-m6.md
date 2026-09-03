@@ -99,13 +99,13 @@
 - M6.1：**协调 Agent 派单** → Runbook / Incident / Topology **专家各 1 工具** → **merge 汇总**；危险题走 **safe_response** 策略分支
 
 
-| trace step                      | 含义            |
-| ------------------------------- | ------------- |
-| `safe_check`                    | 是否走安全分支       |
-| `agent_dispatch`                | 协调者派了哪些专家     |
-| `agent_result`                  | 某专家 tool 结果摘要 |
-| `planning`                      | M6.2 排查计划 2～4 步；`planning_skipped` = fast-path 未调 LLM |
-| `session`                       | M6.2 thread_id 关联  |
+| trace step       | 含义                                                    |
+| ---------------- | ----------------------------------------------------- |
+| `safe_check`     | 是否走安全分支                                               |
+| `agent_dispatch` | 协调者派了哪些专家                                             |
+| `agent_result`   | 某专家 tool 结果摘要                                         |
+| `planning`       | M6.2 排查计划 2～4 步；`planning_skipped` = fast-path 未调 LLM |
+| `session`        | M6.2 thread_id 关联                                     |
 
 
 ---
@@ -119,7 +119,7 @@
 **A：**
 
 1. **现象**：两路专家结论冲突，用户收到矛盾建议。
-2. **根因**：Runbook 给通用 SOP；Incident 给**单次**历史根因，不可直接等同本次。
+2. **根因**：Runbook 给通用 SOP；Incident 给**单次**历史根因，不可直 接等同本次。
 3. **排查**：看 trace `agent_dispatch.tasks` 和各路 `agent_result`；确认 incident 的 service/keyword 是否匹配当前告警。
 4. **更好方案**：merge prompt 约定优先级——**Runbook 步骤 + topology 结构化数据为准**，事故记录作背景；必要时协调者再派一轮补查。
 5. **本项目**：`multi_agent_graph.py` `MERGE_PROMPT` 第 2 条；trace `agent_merge.agents_used`。
@@ -156,9 +156,12 @@
 2. **根因**：模型格式漂移。
 3. **手段**：`_extract_json_object` 抽 JSON；失败则 **fallback** 默认派 runbook 专家；trace 标 `coordinator_fallback: true`。
 4. **更好方案**：Pydantic structured output / 重试 1 次。
-5. **本项目**：`_coordinator_node` fallback + trace 字段。
+5. 
+6. **本项目**：`_coordinator_node` fallback + trace 字段。
 
 ---
+
+
 
 ### 场景题（M6.2）
 
@@ -238,6 +241,8 @@
 
 ---
 
+
+
 ### M6.2 自检
 
 - [ ] 两轮同 thread：「payment 502」→「刚才那个还影响谁」（topology 派单 + enrich 生效）
@@ -248,6 +253,8 @@
 - [ ] **F5 刷新**后聊天气泡仍在（localStorage；截图预览除外）
 - [ ] **关知识库**：「北京天气」→「东城区」同 thread 能续聊（generate 层 history）
 
+
+
 ### M6.1 自检
 
 - [x] 能口述 Multi-Agent 图：safe_check → coordinator → specialists → merge
@@ -256,7 +263,11 @@
 
 ---
 
+
+
 ## M6.25 Reranker（U-001）
+
+
 
 ### 概念
 
@@ -268,6 +279,8 @@
 - **CrossEncoder**：把 `(query, chunk)` 拼在一起过 Transformer，打相关性分，**精排更准**、更贵。
 - 常见流水线：**粗排多取（pool=20）→ 精排截断 Top-3** → 再进 CRAG/LLM。
 - **本项目**：`retriever.retrieve` → `reranker.rerank_documents`；模型默认 `BAAI/bge-reranker-base`。
+
+
 
 ### 场景题（M6.25）
 
@@ -298,6 +311,8 @@
 3. 生产可 GPU / 独立 rerank 服务。
 4. **本项目**：懒加载 `get_cross_encoder()`；首次请求会下载模型。
 
+
+
 ### M6.25 自检
 
 - [ ] `python -m unittest tests.test_reranker -v` 通过
@@ -307,7 +322,11 @@
 
 ---
 
+
+
 ## M6.26 Faithfulness 口径（U-002 轻量）
+
+
 
 ### 概念
 
@@ -320,24 +339,28 @@
 - **未安装**官方 `ragas` 包；不说「跑了 RAGAS」，说「LLM-as-judge，口径对齐 faithfulness」。  
 - 数字（v5）：On-call+CRAG 幻觉 **11.5%** → 答案级 faithfulness ≈ **88.5%**。
 
+
+
 ### 场景题（M6.26）
 
 **Q1：** 检索 Recall@3 已经 86.8%，为什么还会幻觉？
 
 **A：**
 
-1. **分层**：Recall 只保证「期望文件进 Top-K」；生成仍可能补文档没有的命令。  
-2. **Case**：q02「连接数打满」On-call 无 CRAG → `[HALLU]`（见 `eval/reports/generation/gen_eval_result_v5.md`）。  
-3. **CRAG**：把幻觉 17.2%→11.5%，仍非零——grade 管相关，不管逐步溯源。  
+1. **分层**：Recall 只保证「期望文件进 Top-K」；生成仍可能补文档没有的命令。
+2. **Case**：q02「连接数打满」On-call 无 CRAG → `[HALLU]`（见 `eval/reports/generation/gen_eval_result_v5.md`）。
+3. **CRAG**：把幻觉 17.2%→11.5%，仍非零——grade 管相关，不管逐步溯源。
 4. **本项目**：检索 `run_eval` + 生成 `run_gen_eval` 分开报。
 
 **Q2：** 答案级 faithfulness 和 RAGAS claim 级差在哪？
 
 **A：**
 
-1. **答案级**：整段答里「有没有任意一条胡编」→ 我们的幻觉率。  
-2. **Claim 级**：拆成多条陈述，每条算是否被 context 支持，再平均 → 官方 RAGAS 常见做法。  
+1. **答案级**：整段答里「有没有任意一条胡编」→ 我们的幻觉率。
+2. **Claim 级**：拆成多条陈述，每条算是否被 context 支持，再平均 → 官方 RAGAS 常见做法。
 3. **口述**：我们优先答案级，On-call「不能编造任何命令」更严；claim 级是扩展。
+
+
 
 ### M6.26 自检
 
@@ -347,7 +370,11 @@
 
 ---
 
+
+
 ## M6.27 压低误拒答（U-018）
+
+
 
 ### 概念
 
@@ -355,11 +382,13 @@
 
 **A：**
 
-1. **根因**：grade 过严（「必须能完整回答」）→ 两次 NONE → 硬 abstain，库内题也被拒。  
-2. **手段**：① grade 改成偏召回（同域线索即相关）；② 改写后仍 NONE 且检索非空 → **soft-fallback** 谨慎生成（trace `reason=soft_fallback`）。  
-3. **开关**：默认 `CRAG_SOFT_FALLBACK=1`；对比实验可关。  
-4. **边界**：soft-fallback **不是** `safe_response`（危险操作明确拒答仍走安全分支）。  
+1. **根因**：grade 过严（「必须能完整回答」）→ 两次 NONE → 硬 abstain，库内题也被拒。
+2. **手段**：① grade 改成偏召回（同域线索即相关）；② 改写后仍 NONE 且检索非空 → **soft-fallback** 谨慎生成（trace `reason=soft_fallback`）。
+3. **开关**：默认 `CRAG_SOFT_FALLBACK=1`；对比实验可关。
+4. **边界**：soft-fallback **不是** `safe_response`（危险操作明确拒答仍走安全分支）。
 5. **数字**：优化前基线误拒答 21.2%；全量 gen_eval 刷新见 U-020。
+
+
 
 ### 场景题（M6.27）
 
@@ -379,38 +408,46 @@
 
 ---
 
+
+
 ## M6.4 综合自测 20 题（场景 + 八股）
 
 > **用法**：闭卷自答 → 对照参考答案 → 勾选自检。目标 **≥15/20**。  
 > **八股**（Q15～Q20）来自美团/字节类 Agent 面经 + 火山引擎 RAG+Agent 题单；**场景题**覆盖 M4～M6 全链路。  
 > 口述稿见 [PITCH.md](../PITCH.md)。
 
+
+
 ### 自测记录
 
-| # | 题型 | 题目摘要 | 自评 |
-|---|------|----------|------|
-| 1 | 场景 | 召回率多少、怎么量的 | ☐ |
-| 2 | 场景 | 答错了从哪层查 | ☐ |
-| 3 | 场景 | Retrieve vs Generate | ☐ |
-| 4 | 场景 | CRAG 幻觉 17.2%→11.5% trade-off | ☐ |
-| 5 | 场景 | 混合检索为什么、何时无效 | ☐ |
-| 6 | 场景 | PDF/截图进 RAG 链路 | ☐ |
-| 7 | 场景 | 三 tool 怎么拆 | ☐ |
-| 8 | 场景 | 专家结论冲突 | ☐ |
-| 9 | 场景 | FLUSHALL 安全分支 | ☐ |
-| 10 | 场景 | 会话记忆 vs 知识库 | ☐ |
-| 11 | 场景 | planning vs coordinator | ☐ |
-| 12 | 场景 | trace 回放排障 | ☐ |
-| 13 | 场景 | Docker 前端 502 | ☐ |
-| 14 | 场景 | 流式 + 会话保存失败 | ☐ |
-| 15 | 八股 | 向量 vs 关键词检索 | ☐ |
-| 16 | 八股 | Chunk overlap | ☐ |
-| 17 | 八股 | RAG vs Agentic RAG | ☐ |
-| 18 | 八股 | ReAct 原理 | ☐ |
-| 19 | 八股 | LangGraph vs Chain | ☐ |
-| 20 | 八股 | JSON tool 调用兜底 | ☐ |
+
+| #   | 题型  | 题目摘要                          | 自评  |
+| --- | --- | ----------------------------- | --- |
+| 1   | 场景  | 召回率多少、怎么量的                    | ☐   |
+| 2   | 场景  | 答错了从哪层查                       | ☐   |
+| 3   | 场景  | Retrieve vs Generate          | ☐   |
+| 4   | 场景  | CRAG 幻觉 17.2%→11.5% trade-off | ☐   |
+| 5   | 场景  | 混合检索为什么、何时无效                  | ☐   |
+| 6   | 场景  | PDF/截图进 RAG 链路                | ☐   |
+| 7   | 场景  | 三 tool 怎么拆                    | ☐   |
+| 8   | 场景  | 专家结论冲突                        | ☐   |
+| 9   | 场景  | FLUSHALL 安全分支                 | ☐   |
+| 10  | 场景  | 会话记忆 vs 知识库                   | ☐   |
+| 11  | 场景  | planning vs coordinator       | ☐   |
+| 12  | 场景  | trace 回放排障                    | ☐   |
+| 13  | 场景  | Docker 前端 502                 | ☐   |
+| 14  | 场景  | 流式 + 会话保存失败                   | ☐   |
+| 15  | 八股  | 向量 vs 关键词检索                   | ☐   |
+| 16  | 八股  | Chunk overlap                 | ☐   |
+| 17  | 八股  | RAG vs Agentic RAG            | ☐   |
+| 18  | 八股  | ReAct 原理                      | ☐   |
+| 19  | 八股  | LangGraph vs Chain            | ☐   |
+| 20  | 八股  | JSON tool 调用兜底                | ☐   |
+
 
 ---
+
+
 
 ### 场景题（Q1～Q14）
 
@@ -430,13 +467,15 @@
 
 **A：**
 
-| 层 | 查什么 | 本项目 |
-|----|--------|--------|
-| Query | 太模糊？需改写？ | CRAG rewrite；M6 enrich 指代 |
-| Retrieve | Top-K 片段相关吗？ | 看 `sources`；`run_eval.py` |
-| Chunk | 语义被切断？ | `loader.py` chunk_size/overlap |
-| Generate | 上下文对仍胡说？ | On-call prompt；CRAG grade |
-| Agent | 选错 tool？ | `GET /traces/{id}` tool_name |
+
+| 层        | 查什么          | 本项目                            |
+| -------- | ------------ | ------------------------------ |
+| Query    | 太模糊？需改写？     | CRAG rewrite；M6 enrich 指代      |
+| Retrieve | Top-K 片段相关吗？ | 看 `sources`；`run_eval.py`      |
+| Chunk    | 语义被切断？       | `loader.py` chunk_size/overlap |
+| Generate | 上下文对仍胡说？     | On-call prompt；CRAG grade      |
+| Agent    | 选错 tool？     | `GET /traces/{id}` tool_name   |
+
 
 **步骤**：先分 Retrieve vs Generate（gold chunk 在不在 Top-K），再动刀；别一上来换模型。
 
@@ -576,6 +615,8 @@
 
 ---
 
+
+
 ### 基础八股（Q15～Q20）
 
 > 答法：**定义 → 为什么需要 → 本项目怎么落地（有则说）**
@@ -645,6 +686,8 @@
 4. **本项目**：`app/tools.py` + `agent_graph._agent_node`；`multi_agent_graph._coordinator_node` fallback。
 
 ---
+
+
 
 ### M6.4 自检
 

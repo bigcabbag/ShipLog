@@ -51,5 +51,6 @@ def test_text_only_first_turn_uses_query_as_anchor():
 
 def test_anchor_system_note_mentions_pin():
     note = format_anchor_system_note("DROP DATABASE prod")
+    assert note is not None
     assert "DROP DATABASE" in note
     assert "锚点" in note
