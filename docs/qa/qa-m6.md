@@ -16,13 +16,11 @@
 - `query_incident`：PG `incidents` 表查历史事故
 - `get_service_topology`：PG `service_topology` 查上下游依赖
 
-
 | 用户意图       | 工具                     |
 | ---------- | ---------------------- |
 | 怎么排查 / 第一步 | `search_runbook`       |
 | 以前出过吗 / 根因 | `query_incident`       |
 | 还影响谁 / 依赖  | `get_service_topology` |
-
 
 ---
 
@@ -73,8 +71,6 @@
 
 ---
 
-
-
 ### M6.0 自检
 
 - [x] 能口述 Agent 图：agent → tools → agent → synthesize
@@ -83,11 +79,7 @@
 
 ---
 
-
-
 ## M6.1 Multi-Agent
-
-
 
 ### 概念
 
@@ -98,7 +90,6 @@
 - M6.0：单 Agent bind 3 tools，LLM 自选工具
 - M6.1：**协调 Agent 派单** → Runbook / Incident / Topology **专家各 1 工具** → **merge 汇总**；危险题走 **safe_response** 策略分支
 
-
 | trace step       | 含义                                                    |
 | ---------------- | ----------------------------------------------------- |
 | `safe_check`     | 是否走安全分支                                               |
@@ -107,10 +98,7 @@
 | `planning`       | M6.2 排查计划 2～4 步；`planning_skipped` = fast-path 未调 LLM |
 | `session`        | M6.2 thread_id 关联                                     |
 
-
 ---
-
-
 
 ### 场景题（M6.1）
 
@@ -159,8 +147,6 @@
 5. **本项目**：`_coordinator_node` fallback + trace 字段。
 
 ---
-
-
 
 ### 场景题（M6.2）
 
@@ -240,8 +226,6 @@
 
 ---
 
-
-
 ### M6.2 自检
 
 - [ ] 两轮同 thread：「payment 502」→「刚才那个还影响谁」（topology 派单 + enrich 生效）
@@ -252,8 +236,6 @@
 - [ ] **F5 刷新**后聊天气泡仍在（localStorage；截图预览除外）
 - [ ] **关知识库**：「北京天气」→「东城区」同 thread 能续聊（generate 层 history）
 
-
-
 ### M6.1 自检
 
 - [x] 能口述 Multi-Agent 图：safe_check → coordinator → specialists → merge
@@ -262,11 +244,7 @@
 
 ---
 
-
-
 ## M6.25 Reranker（U-001）
-
-
 
 ### 概念
 
@@ -278,8 +256,6 @@
 - **CrossEncoder**：把 `(query, chunk)` 拼在一起过 Transformer，打相关性分，**精排更准**、更贵。
 - 常见流水线：**粗排多取（pool=20）→ 精排截断 Top-3** → 再进 CRAG/LLM。
 - **本项目**：`retriever.retrieve` → `reranker.rerank_documents`；模型默认 `BAAI/bge-reranker-base`。
-
-
 
 ### 场景题（M6.25）
 
@@ -310,8 +286,6 @@
 3. 生产可 GPU / 独立 rerank 服务。
 4. **本项目**：懒加载 `get_cross_encoder()`；首次请求会下载模型。
 
-
-
 ### M6.25 自检
 
 - [ ] `python -m unittest tests.test_reranker -v` 通过
@@ -321,11 +295,7 @@
 
 ---
 
-
-
 ## M6.26 Faithfulness 口径（U-002 轻量）
-
-
 
 ### 概念
 
@@ -337,8 +307,6 @@
 - **实现**：`run_gen_eval.py` 用 temperature=0 的 LLM 做答案级幻觉判定；**答案级 faithfulness ≈ 1 − 幻觉率**。  
 - **未安装**官方 `ragas` 包；不说「跑了 RAGAS」，说「LLM-as-judge，口径对齐 faithfulness」。  
 - 数字（v5）：On-call+CRAG 幻觉 **11.5%** → 答案级 faithfulness ≈ **88.5%**。
-
-
 
 ### 场景题（M6.26）
 
@@ -359,8 +327,6 @@
 2. **Claim 级**：拆成多条陈述，每条算是否被 context 支持，再平均 → 官方 RAGAS 常见做法。
 3. **口述**：我们优先答案级，On-call「不能编造任何命令」更严；claim 级是扩展。
 
-
-
 ### M6.26 自检
 
 - [ ] 能说出 ≈88.5% 怎么从 11.5% 换算来  
@@ -369,11 +335,7 @@
 
 ---
 
-
-
 ## M6.27 压低误拒答（U-018）
-
-
 
 ### 概念
 
@@ -386,8 +348,6 @@
 3. **开关**：默认 `CRAG_SOFT_FALLBACK=1`；对比实验可关。
 4. **边界**：soft-fallback **不是** `safe_response`（危险操作明确拒答仍走安全分支）。
 5. **数字**：优化前基线误拒答 21.2%；全量 gen_eval 刷新见 U-020。
-
-
 
 ### 场景题（M6.27）
 
@@ -407,18 +367,13 @@
 
 ---
 
-
-
 ## M6.4 综合自测 20 题（场景 + 八股）
 
 > **用法**：闭卷自答 → 对照参考答案 → 勾选自检。目标 **≥15/20**。  
 > **八股**（Q15～Q20）来自美团/字节类 Agent 面经 + 火山引擎 RAG+Agent 题单；**场景题**覆盖 M4～M6 全链路。  
 > 口述稿见 [PITCH.md](../PITCH.md)。
 
-
-
 ### 自测记录
-
 
 | #   | 题型  | 题目摘要                          | 自评  |
 | --- | --- | ----------------------------- | --- |
@@ -443,10 +398,7 @@
 | 19  | 八股  | LangGraph vs Chain            | ☐   |
 | 20  | 八股  | JSON tool 调用兜底                | ☐   |
 
-
 ---
-
-
 
 ### 场景题（Q1～Q14）
 
@@ -466,7 +418,6 @@
 
 **A：**
 
-
 | 层        | 查什么          | 本项目                            |
 | -------- | ------------ | ------------------------------ |
 | Query    | 太模糊？需改写？     | CRAG rewrite；M6 enrich 指代      |
@@ -474,7 +425,6 @@
 | Chunk    | 语义被切断？       | `loader.py` chunk_size/overlap |
 | Generate | 上下文对仍胡说？     | On-call prompt；CRAG grade      |
 | Agent    | 选错 tool？     | `GET /traces/{id}` tool_name   |
-
 
 **步骤**：先分 Retrieve vs Generate（gold chunk 在不在 Top-K），再动刀；别一上来换模型。
 
@@ -614,8 +564,6 @@
 
 ---
 
-
-
 ### 基础八股（Q15～Q20）
 
 > 答法：**定义 → 为什么需要 → 本项目怎么落地（有则说）**
@@ -685,8 +633,6 @@
 4. **本项目**：`app/tools.py` + `agent_graph._agent_node`；`multi_agent_graph._coordinator_node` fallback。
 
 ---
-
-
 
 ### M6.4 自检
 
