@@ -1,11 +1,12 @@
 ﻿from pathlib import Path
 import json
+import asyncio
 from contextlib import asynccontextmanager
 
 # 国内 HF 镜像：须先于任何可能间接 import huggingface_hub 的依赖
 import app.hf_bootstrap  # noqa: F401
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, StreamingResponse
 
@@ -34,6 +35,39 @@ from app.schemas import (
 UPLOAD_DIR = Path("data/uploads")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 PREVIEW_CHARS = 200
+STREAM_STEP_TIMEOUT_SECONDS = 90
+DISCONNECT_POLL_SECONDS = 0.25
+
+
+class ClientDisconnected(Exception):
+    """客户端已关闭 SSE 连接，不再继续消耗模型或检索资源。"""
+
+
+async def _wait_for_disconnect(request: Request) -> None:
+    while not await request.is_disconnected():
+        await asyncio.sleep(DISCONNECT_POLL_SECONDS)
+
+
+async def _next_stream_item(iterator, request: Request):
+    """等待流下一项；断连或超时会取消对应的 in-flight task。"""
+    next_task = asyncio.create_task(anext(iterator))
+    disconnect_task = asyncio.create_task(_wait_for_disconnect(request))
+    try:
+        done, _ = await asyncio.wait(
+            {next_task, disconnect_task},
+            timeout=STREAM_STEP_TIMEOUT_SECONDS,
+            return_when=asyncio.FIRST_COMPLETED,
+        )
+        if next_task in done:
+            return next_task.result()
+        if disconnect_task in done:
+            raise ClientDisconnected
+        raise TimeoutError(f"流式步骤超过 {STREAM_STEP_TIMEOUT_SECONDS} 秒未返回")
+    finally:
+        for task in (next_task, disconnect_task):
+            if not task.done():
+                task.cancel()
+        await asyncio.gather(next_task, disconnect_task, return_exceptions=True)
 
 
 def _sse_event(payload: dict) -> str:
@@ -207,7 +241,7 @@ async def chat_endpoint(body: ChatRequest):
 
 
 @app.post("/chat/stream")
-async def chat_stream_endpoint(body: ChatRequest):
+async def chat_stream_endpoint(body: ChatRequest, request: Request):
     """M3.3 / U-003：SSE 流式。进度 event=vision_extract|status|tool_start|tool_end|plan_steps，再 token，最后 done。"""
 
     async def event_generator():
@@ -226,19 +260,27 @@ async def chat_stream_endpoint(body: ChatRequest):
 
             if body.use_rag:
                 ready: dict | None = None
-                async for item in iter_rag_stream_prepare(
+                prepare_stream = iter_rag_stream_prepare(
                     body.message,
                     top_k=body.top_k,
                     system_prompt=body.system_prompt,
                     image_base64=body.image_base64,
                     image_media_type=body.image_media_type,
                     thread_id=thread_id,
-                ):
-                    kind = item.get("kind")
-                    if kind == "sse":
-                        yield _sse_event(item["data"])
-                    elif kind == "ready":
-                        ready = item["data"]
+                )
+                try:
+                    while True:
+                        try:
+                            item = await _next_stream_item(prepare_stream, request)
+                        except StopAsyncIteration:
+                            break
+                        kind = item.get("kind")
+                        if kind == "sse":
+                            yield _sse_event(item["data"])
+                        elif kind == "ready":
+                            ready = item["data"]
+                finally:
+                    await prepare_stream.aclose()
 
                 if ready is None:
                     yield _sse_event({"error": "RAG 准备阶段未完成"})
@@ -290,13 +332,21 @@ async def chat_stream_endpoint(body: ChatRequest):
                 sources = raw_sources
 
             full_reply: list[str] = []
-            async for token in chat_stream(
+            token_stream = chat_stream(
                 stream_user_message,
                 system_prompt=stream_prompt,
                 history=chat_history,
-            ):
-                full_reply.append(token)
-                yield _sse_event({"token": token})
+            )
+            try:
+                while True:
+                    try:
+                        token = await _next_stream_item(token_stream, request)
+                    except StopAsyncIteration:
+                        break
+                    full_reply.append(token)
+                    yield _sse_event({"token": token})
+            finally:
+                await token_stream.aclose()
 
             reply_text = "".join(full_reply)
             if reply_text.strip():
@@ -322,6 +372,10 @@ async def chat_stream_endpoint(body: ChatRequest):
                     "plan_steps": plan_steps,
                 }
             )
+        except ClientDisconnected:
+            return
+        except asyncio.TimeoutError as exc:
+            yield _sse_event({"error": str(exc)})
         except ValueError as exc:
             yield _sse_event({"error": str(exc)})
         except RuntimeError as exc:

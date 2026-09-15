@@ -90,6 +90,7 @@ function progressLabel(payload: SsePayload): string {
 export async function postChatStream(
   body: ChatRequestBody,
   handlers: ChatStreamHandlers,
+  options: { signal?: AbortSignal } = {},
 ): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/chat/stream`, {
     method: "POST",
@@ -99,6 +100,7 @@ export async function postChatStream(
       top_k: 3,
       ...body,
     }),
+    signal: options.signal,
   });
 
   if (!response.ok) {
