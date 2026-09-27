@@ -35,6 +35,7 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const streamAbortControllerRef = useRef<AbortController | null>(null);
   const initialThreadId = getOrCreateThreadId();
   const [messages, setMessages] = useState<ChatMessage[]>(() =>
     loadChatMessages(initialThreadId),
@@ -83,6 +84,8 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
     }, 300);
     return () => window.clearTimeout(timer);
   }, [messages, threadId]);
+
+  useEffect(() => () => streamAbortControllerRef.current?.abort(), []);
 
   function patchMessage(id: string, patch: Partial<ChatMessage>) {
     setMessages((prev) =>
@@ -137,6 +140,8 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
 
     if (streamOn) {
       const assistantId = crypto.randomUUID();
+      const controller = new AbortController();
+      streamAbortControllerRef.current = controller;
       setMessages((prev) => [
         ...prev,
         {
@@ -190,9 +195,24 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
               planSteps: plan_steps ?? undefined,
             });
           },
-        });
+        }, { signal: controller.signal });
       } catch (err: unknown) {
         setStreamStatus(null);
+        if (err instanceof DOMException && err.name === "AbortError") {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId
+                ? {
+                    ...m,
+                    content: m.content
+                      ? `${m.content}\n\n[已停止生成]`
+                      : "[已停止生成]",
+                  }
+                : m,
+            ),
+          );
+          return;
+        }
         const message = err instanceof Error ? err.message : "发送失败";
         setMessages((prev) => {
           const target = prev.find((m) => m.id === assistantId);
@@ -214,6 +234,9 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
           );
         });
       } finally {
+        if (streamAbortControllerRef.current === controller) {
+          streamAbortControllerRef.current = null;
+        }
         setLoading(false);
       }
       return;
@@ -260,6 +283,10 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
     setPendingImage(null);
     setStickToBottom(true);
     setThreadId(resetThreadId());
+  }
+
+  function handleStopStream() {
+    streamAbortControllerRef.current?.abort();
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -507,6 +534,11 @@ function ChatPanel({ disabled = false }: ChatPanelProps) {
           <button type="submit" className="chat-panel__send" disabled={!canSend}>
             {loading ? "发送中" : "发送"}
           </button>
+          {loading && streamOn && (
+            <button type="button" className="chat-panel__send" onClick={handleStopStream}>
+              停止生成
+            </button>
+          )}
         </div>
       </form>
         </>

@@ -105,13 +105,18 @@ async def iter_rag_stream_prepare(
                 await queue.put(None)
 
     task = asyncio.create_task(_run_prepare())
-    while True:
-        item = await queue.get()
-        if item is None:
-            break
-        yield {"kind": "sse", "data": item}
+    try:
+        while True:
+            item = await queue.get()
+            if item is None:
+                break
+            yield {"kind": "sse", "data": item}
 
-    rag_prompt, sources, early, trace_id, plan_steps, tid = await task
+        rag_prompt, sources, early, trace_id, plan_steps, tid = await task
+    finally:
+        if not task.done():
+            task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
 
     yield {
         "kind": "ready",
