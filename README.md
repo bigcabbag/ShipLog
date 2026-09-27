@@ -33,32 +33,9 @@ ShipLog 用可演示、可评测的模拟 SRE 知识库验证这条链路：
 
 ## 架构
 
-```mermaid
-flowchart LR
-    U[用户问题 / 告警截图] --> Q[输入解析<br/>截图 → 检索 query]
-    Q --> S{安全检查}
-    S -->|危险操作| SAFE[安全策略分支<br/>Runbook + Incident]
-    S -->|常规排查| P[Planning]
-    P --> C[Coordinator]
-    C --> R[Runbook 专家<br/>CRAG]
-    C --> I[Incident 专家<br/>PostgreSQL]
-    C --> T[Topology 专家<br/>PostgreSQL]
-    R --> M[Merge]
-    I --> M
-    T --> M
-    SAFE --> G[LLM 生成]
-    M --> G
-    G --> SSE[SSE：进度 / token / sources]
-    SSE --> UI[React 聊天界面]
+![ShipLog architecture and request flow](./docs/assets/shiplog-architecture.svg)
 
-    subgraph Knowledge Base
-      KB[Markdown / PDF] --> EMB[Embedding]
-      EMB --> PG[(pgvector)]
-      KB --> BM[BM25 索引]
-      PG --> R
-      BM --> R
-    end
-```
+> 讲述顺序：**请求接入 → 上下文与安全分流 → 三类只读证据工具 → Merge 约束生成 → SSE 实时返回**。图中绿色为常规链路，橙色为安全分支，蓝色为状态/数据能力。
 
 ### 关键设计
 

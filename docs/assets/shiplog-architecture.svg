@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1320" viewBox="0 0 1920 1320" role="img" aria-labelledby="title desc">
+  <title id="title">ShipLog 系统架构与请求流</title>
+  <desc id="desc">ShipLog 从 React、Nginx、FastAPI 接收请求，经过多轮上下文、安全判断、规划协调、三类只读专家工具、证据汇总和 SSE 流式返回。</desc>
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0,0 L12,6 L0,12 Z" fill="#70816e"/></marker>
+    <marker id="arrowSafety" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0,0 L12,6 L0,12 Z" fill="#b47a67"/></marker>
+    <style>
+      .bg { fill: #f7f8f3; }
+      .section { fill: #fcfcf8; stroke: #d8ded2; stroke-width: 2; }
+      .sectionTitle { font: 700 24px Arial, 'Microsoft YaHei', sans-serif; fill: #66785f; letter-spacing: 1px; }
+      .title { font: 700 46px Arial, 'Microsoft YaHei', sans-serif; fill: #26372b; }
+      .subtitle { font: 400 22px Arial, 'Microsoft YaHei', sans-serif; fill: #718070; }
+      .node { fill: #f1f5ed; stroke: #879b7f; stroke-width: 2.5; }
+      .nodeBlue { fill: #eef6f7; stroke: #7f9ea1; stroke-width: 2.5; }
+      .nodeWarn { fill: #fff6ed; stroke: #bc8a71; stroke-width: 2.5; }
+      .nodeGold { fill: #fffaf0; stroke: #b99b61; stroke-width: 2.5; }
+      .nodeTitle { font: 700 25px Arial, 'Microsoft YaHei', sans-serif; fill: #344337; text-anchor: middle; }
+      .nodeSub { font: 400 18px Arial, 'Microsoft YaHei', sans-serif; fill: #68766b; text-anchor: middle; }
+      .small { font: 400 17px Arial, 'Microsoft YaHei', sans-serif; fill: #66756a; }
+      .label { font: 600 17px Arial, 'Microsoft YaHei', sans-serif; fill: #687866; }
+      .line { fill: none; stroke: #70816e; stroke-width: 3; marker-end: url(#arrow); }
+      .lineDash { fill: none; stroke: #8ca18a; stroke-width: 2.5; stroke-dasharray: 8 7; marker-end: url(#arrow); }
+      .lineSafety { fill: none; stroke: #b47a67; stroke-width: 3; marker-end: url(#arrowSafety); }
+      .toolBox { fill: #f8faf6; stroke: #b9c8b2; stroke-width: 2; stroke-dasharray: 8 7; }
+      .toolLabel { font: 700 20px Arial, 'Microsoft YaHei', sans-serif; fill: #60755e; }
+    </style>
+  </defs>
+
+  <rect class="bg" width="1920" height="1320" rx="30"/>
+  <text x="78" y="82" class="title">ShipLog · 系统架构与关键决策</text>
+  <text x="80" y="120" class="subtitle">请求先经安全与会话边界，再以受控工具获取证据，最后通过 POST SSE 实时返回。</text>
+  <line x1="78" y1="148" x2="1842" y2="148" stroke="#d9dfd4" stroke-width="2"/>
+
+  <!-- 01 request -->
+  <rect class="section" x="64" y="175" width="1792" height="190" rx="28"/>
+  <text x="92" y="215" class="sectionTitle">01　请求接入</text>
+  <rect class="node" x="124" y="245" width="238" height="84" rx="18"/>
+  <text x="243" y="279" class="nodeTitle">React 聊天界面</text><text x="243" y="307" class="nodeSub">问题 / 告警截图</text>
+  <rect class="node" x="465" y="245" width="220" height="84" rx="18"/>
+  <text x="575" y="279" class="nodeTitle">Nginx :8080</text><text x="575" y="307" class="nodeSub">静态资源 · 反向代理</text>
+  <rect class="node" x="790" y="245" width="238" height="84" rx="18"/>
+  <text x="909" y="279" class="nodeTitle">FastAPI</text><text x="909" y="307" class="nodeSub">POST /chat/stream</text>
+  <rect class="nodeBlue" x="1133" y="245" width="292" height="84" rx="18"/>
+  <text x="1279" y="279" class="nodeTitle">输入解析</text><text x="1279" y="307" class="nodeSub">可选视觉模型 → 检索 Query</text>
+  <rect class="nodeBlue" x="1530" y="245" width="250" height="84" rx="18"/>
+  <text x="1655" y="279" class="nodeTitle">会话状态</text><text x="1655" y="307" class="nodeSub">thread_id · Checkpointer</text>
+  <path class="line" d="M362 287 H445"/><text x="394" y="272" class="label">POST</text>
+  <path class="line" d="M685 287 H770"/><path class="line" d="M1028 287 H1113"/><path class="lineDash" d="M1425 287 H1510"/>
+  <path class="line" d="M1279 329 V410 H615 V448"/>
+
+  <!-- 02 safety and orchestration -->
+  <rect class="section" x="64" y="392" width="1792" height="284" rx="28"/>
+  <text x="92" y="432" class="sectionTitle">02　上下文与安全分流</text>
+  <rect class="nodeBlue" x="124" y="474" width="330" height="104" rx="18"/>
+  <text x="289" y="512" class="nodeTitle">多轮上下文</text><text x="289" y="542" class="nodeSub">最近 6 条消息 + incident_anchor</text>
+  <path d="M615 468 L708 548 L615 628 L522 548 Z" class="nodeGold"/>
+  <text x="615" y="542" class="nodeTitle">安全检查</text><text x="615" y="570" class="nodeSub">危险操作？</text>
+  <rect class="nodeWarn" x="818" y="474" width="300" height="104" rx="18"/>
+  <text x="968" y="512" class="nodeTitle">安全策略回复</text><text x="968" y="542" class="nodeSub">风险 · 审批 · 替代方案</text>
+  <rect class="node" x="1228" y="448" width="250" height="84" rx="18"/>
+  <text x="1353" y="482" class="nodeTitle">Planning</text><text x="1353" y="510" class="nodeSub">2–4 步排查计划</text>
+  <rect class="node" x="1546" y="448" width="240" height="84" rx="18"/>
+  <text x="1666" y="482" class="nodeTitle">Coordinator</text><text x="1666" y="510" class="nodeSub">白名单专家派单</text>
+  <path class="lineDash" d="M1655 329 V420 H289 V454"/><path class="line" d="M454 526 H501"/>
+  <path class="lineSafety" d="M708 548 H798"/><text x="733" y="531" class="label">危险</text>
+  <path class="line" d="M708 594 V622 H1353 V552"/><text x="898" y="614" class="label">常规排查</text>
+  <path class="line" d="M1478 490 H1526"/>
+  <text x="1250" y="566" class="small">简单首轮问题走 fast-path，跳过 Planning LLM</text>
+
+  <!-- 03 evidence -->
+  <rect class="section" x="64" y="704" width="1792" height="340" rx="28"/>
+  <text x="92" y="744" class="sectionTitle">03　证据检索与受控工具</text>
+  <rect class="toolBox" x="120" y="775" width="1130" height="220" rx="22"/>
+  <text x="150" y="812" class="toolLabel">只读 Specialists（Coordinator 只可派发以下三类）</text>
+  <rect class="node" x="158" y="845" width="296" height="102" rx="18"/>
+  <text x="306" y="881" class="nodeTitle">Runbook 专家</text><text x="306" y="910" class="nodeSub">Hybrid：BM25 + pgvector RRF</text><text x="306" y="934" class="nodeSub">CRAG 相关性控制</text>
+  <rect class="nodeBlue" x="526" y="845" width="270" height="102" rx="18"/>
+  <text x="661" y="881" class="nodeTitle">Incident 专家</text><text x="661" y="910" class="nodeSub">PostgreSQL 模拟事故库</text><text x="661" y="934" class="nodeSub">历史根因 / 处置记录</text>
+  <rect class="nodeBlue" x="868" y="845" width="330" height="102" rx="18"/>
+  <text x="1033" y="881" class="nodeTitle">Topology 专家</text><text x="1033" y="910" class="nodeSub">服务上下游与 blast radius</text><text x="1033" y="934" class="nodeSub">依赖拓扑查询</text>
+  <rect class="nodeGold" x="1355" y="820" width="290" height="120" rx="18"/>
+  <text x="1500" y="864" class="nodeTitle">Merge</text><text x="1500" y="895" class="nodeSub">只汇总工具返回的事实</text><text x="1500" y="920" class="nodeSub">Runbook 优先于事故背景</text>
+  <rect class="nodeBlue" x="128" y="970" width="1070" height="54" rx="14"/>
+  <text x="663" y="1005" class="nodeSub">Markdown / PDF → 切块 → Embedding + pgvector　｜　BM25 索引 → Runbook 专家</text>
+  <path class="line" d="M1666 532 V760 H306 V825"/><path class="line" d="M1666 760 H661 V825"/><path class="line" d="M1666 760 H1033 V825"/>
+  <path class="line" d="M454 896 H1335"/><path class="line" d="M796 896 H1335"/><path class="line" d="M1198 896 H1335"/>
+
+  <!-- 04 response -->
+  <rect class="section" x="64" y="1070" width="1792" height="180" rx="28"/>
+  <text x="92" y="1110" class="sectionTitle">04　证据约束生成，并通过 SSE 返回</text>
+  <rect class="node" x="310" y="1136" width="270" height="78" rx="18"/>
+  <text x="445" y="1168" class="nodeTitle">LLM 流式生成</text><text x="445" y="1194" class="nodeSub">只依据证据回答</text>
+  <rect class="nodeBlue" x="782" y="1136" width="350" height="78" rx="18"/>
+  <text x="957" y="1168" class="nodeTitle">SSE 事件流</text><text x="957" y="1194" class="nodeSub">vision / plan / tool / token / done</text>
+  <rect class="node" x="1334" y="1136" width="300" height="78" rx="18"/>
+  <text x="1484" y="1168" class="nodeTitle">React 实时展示</text><text x="1484" y="1194" class="nodeSub">步骤 · 工具进度 · 来源</text>
+  <path class="line" d="M1500 940 V1095 H445 V1116"/><path class="lineSafety" d="M968 578 V1095 H445 V1116"/>
+  <path class="line" d="M580 1175 H762"/><path class="line" d="M1132 1175 H1314"/>
+  <text x="80" y="1290" class="small">口述顺序：先讲入口与多轮状态 → 安全分流 → 三类只读证据工具 → Merge 约束生成 → SSE 让过程可见。</text>
+</svg>
